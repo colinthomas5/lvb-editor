@@ -1,5 +1,6 @@
 import os
 import fileHandler
+import inspect
 from tkinter import *
 from tkinter import filedialog
 
@@ -7,6 +8,25 @@ from tkinter import filedialog
 root = Tk()
 root.title("LVB-Edit: No File")
 layerList = []
+
+def clearValues():
+    valueNameEntry.delete(0, END)
+    valueTypeEntry.delete(0, END)
+    valueUnknown1Entry.delete(0, END)
+    valueIndexEntry.delete(0, END)
+    valueUnknown2Entry.delete(0, END)
+    valuePosXEntry.delete(0, END)
+    valuePosYEntry.delete(0, END)
+    valuePosZEntry.delete(0, END)
+    valueStretchXEntry.delete(0, END)
+    valueUnknown4Entry.delete(0, END)
+    valueUnknown5Entry.delete(0, END)
+    valueUnknown6Entry.delete(0, END)
+    valueUnknown7Entry.delete(0, END)
+    valueUnknown8Entry.delete(0, END)
+    valueUnknown9Entry.delete(0, END)
+    valueUnknown10Entry.delete(0, END)
+    valueHeaderEndEntry.delete(0, END)
 
 # Command for opening a .lvb file
 def openFile():
@@ -33,20 +53,28 @@ def closeFile():
     file.close()
     layerListbox.delete(0, END)
     entityListbox.delete(0, END)
+    clearValues()
     root.title("LVB-Edit: No File")
     #currentFileLabel.config(text="Current file: ")
 
+def saveFile():
+    print("To be implemented")
+
 # Frame that holds open and close file buttons
 fileButtonFrame = LabelFrame(root, padx=5, pady=5)
-fileButtonFrame.grid(row=0, column=1, sticky="W")
+fileButtonFrame.grid(row=0, column=0, columnspan=3, sticky="W")
 
 # Button to open a .lvb file
-openFileButton = Button(fileButtonFrame, text="Open File", state=NORMAL, padx=30, pady=10, command=openFile)
+openFileButton = Button(fileButtonFrame, text="Open File", state=NORMAL, padx=10, pady=5, command=openFile)
 openFileButton.grid(row=0, column=0)
 
 # Button to close a .lvb file
-closeFileButton = Button(fileButtonFrame, text="Close File", state=NORMAL, padx=30, pady=10, command=closeFile)
+closeFileButton = Button(fileButtonFrame, text="Close File", state=NORMAL, padx=10, pady=5, command=closeFile)
 closeFileButton.grid(row=0, column=1)
+
+# Button to close a .lvb file
+saveFileButton = Button(fileButtonFrame, text="Save File", state=NORMAL, padx=10, pady=5, command=saveFile)
+saveFileButton.grid(row=0, column=2)
 
 # Text that reads what file is currently open. Deprecated in favor of showing currently-open file in window name
 #currentFileLabel = Label(root, text="Current file: ")
@@ -64,24 +92,9 @@ entityFrame.grid(row=2, column=1, sticky="W")
 def onEntitySelect(self):
     global selectedLayer
     if entityListbox.curselection():
-        valueNameEntry.delete(0, END)
-        valueTypeEntry.delete(0, END)
-        valueUnknown1Entry.delete(0, END)
-        valueIndexEntry.delete(0, END)
-        valueUnknown2Entry.delete(0, END)
-        valuePosXEntry.delete(0, END)
-        valuePosYEntry.delete(0, END)
-        valuePosZEntry.delete(0, END)
-        valueStretchXEntry.delete(0, END)
-        valueUnknown4Entry.delete(0, END)
-        valueUnknown5Entry.delete(0, END)
-        valueUnknown6Entry.delete(0, END)
-        valueUnknown7Entry.delete(0, END)
-        valueUnknown8Entry.delete(0, END)
-        valueUnknown9Entry.delete(0, END)
-        valueUnknown10Entry.delete(0, END)
-        valueHeaderEndEntry.delete(0, END)
+        clearValues()
     for selection in entityListbox.curselection():
+        global currentEntity
         currentEntity = selectedLayer.entityList[selection]
         valueNameEntry.insert(0, currentEntity.name)
         valueTypeEntry.insert(1, currentEntity.type)
@@ -102,7 +115,7 @@ def onEntitySelect(self):
         valueHeaderEndEntry.insert(16, currentEntity.headerEnd)
 
 # Listbox that shows all entity layers
-entityListbox = Listbox(entityFrame, width=40, height=20)
+entityListbox = Listbox(entityFrame, width=40, height=21)
 entityListbox.grid(row=0, column=1, sticky="W")
 entityListbox.bind("<<ListboxSelect>>", onEntitySelect)
 
@@ -115,6 +128,7 @@ def onLayerSelect(self):
     global layerList
     if layerListbox.curselection():
         entityListbox.delete(0, END)
+        clearValues()
         for selection in layerListbox.curselection():
             currentLayer = int(selection)
             global selectedLayer
@@ -122,8 +136,17 @@ def onLayerSelect(self):
             for Entity in selectedLayer.entityList:
                 entityListbox.insert(END, Entity.name)
 
+def entityListRefresh():
+    global selectedLayer
+    global currentEntity
+    tempEntity = currentEntity
+    entityListbox.delete(0, END)
+    for Entity in selectedLayer.entityList:
+        entityListbox.insert(END, Entity.name)
+    currentEntity = tempEntity
+
 # Listbox that shows all entity layers
-layerListbox = Listbox(layerFrame, width=10, height=20)
+layerListbox = Listbox(layerFrame, width=10, height=21)
 layerListbox.grid(row=0, column=0, sticky="W")
 layerListbox.bind("<<ListboxSelect>>", onLayerSelect)
 
@@ -163,17 +186,17 @@ propertyUnknown2Entry.bind("<Key>", lambda e: "break")
 propertyUnknown2Entry.pack()
 
 propertyPosXEntry = Entry(propertyLabelFrame, width=12)
-propertyPosXEntry.insert(5, "PosX")
+propertyPosXEntry.insert(5, "PositionX")
 propertyPosXEntry.bind("<Key>", lambda e: "break")
 propertyPosXEntry.pack()
 
 propertyPosYEntry = Entry(propertyLabelFrame, width=12)
-propertyPosYEntry.insert(6, "PosY")
+propertyPosYEntry.insert(6, "PositionY")
 propertyPosYEntry.bind("<Key>", lambda e: "break")
 propertyPosYEntry.pack()
 
 propertyPosZEntry = Entry(propertyLabelFrame, width=12)
-propertyPosZEntry.insert(7, "PosZ")
+propertyPosZEntry.insert(7, "PositionZ")
 propertyPosZEntry.bind("<Key>", lambda e: "break")
 propertyPosZEntry.pack()
 
@@ -222,7 +245,6 @@ propertyHeaderEndEntry.insert(16, "HeaderEnd")
 propertyHeaderEndEntry.bind("<Key>", lambda e: "break")
 propertyHeaderEndEntry.pack()
 
-
 '''# Listbox that shows all properties that are applicable to all entities, regardles of type
 propertyListbox = Listbox(propertyFrame, width=20, height=19)
 propertyListbox.insert(0, "Name")
@@ -244,45 +266,106 @@ propertyListbox.insert(15, "Unknown10")
 propertyListbox.insert(16, "HeaderEnd")
 propertyListbox.grid(row=1, column=0, sticky="W")'''
 
+def writeValue(property, value):
+        global currentEntity
+        for key in currentEntity.__dict__.keys():
+            if key == property:
+                print(key)
+                currentEntity.__dict__.update({key : value})
+        entityListRefresh()
+
 # List of Entries for viewing and modifying entity properties. This is also messy like the property Entries but maybe I'll fix it when Nova yells at me later about it. (Hi Nova :3)
 valueLabel = Label(propertyFrame, text="Value")
 valueLabel.grid(row=0, column=1)
 valueFrame = LabelFrame(propertyFrame)
 valueFrame.grid(row=1, column=1, sticky="NSW")
+
 valueNameEntry = Entry(valueFrame, width=30)
+valueNameEntry.bind("<FocusOut>", lambda e: writeValue("name", valueNameEntry.get()))
+valueNameEntry.bind("<Return>", lambda e: writeValue("name", valueNameEntry.get()))
 valueNameEntry.pack()
+
+
 valueTypeEntry = Entry(valueFrame, width=30)
+valueTypeEntry.bind("<FocusOut>", lambda e: writeValue("type", valueTypeEntry.get()))
+valueTypeEntry.bind("<Return>", lambda e: writeValue("type", valueTypeEntry.get()))
 valueTypeEntry.pack()
+
 valueUnknown1Entry = Entry(valueFrame, width=30)
+valueUnknown1Entry.bind("<FocusOut>", lambda e: writeValue("unknown1", valueUnknown1Entry.get()))
+valueUnknown1Entry.bind("<Return>", lambda e: writeValue("unknown1", valueUnknown1Entry.get()))
 valueUnknown1Entry.pack()
+
 valueIndexEntry = Entry(valueFrame, width=30)
+valueIndexEntry.bind("<FocusOut>", lambda e: writeValue("index", valueIndexEntry.get()))
+valueIndexEntry.bind("<Return>", lambda e: writeValue("index", valueIndexEntry.get()))
 valueIndexEntry.pack()
+
 valueUnknown2Entry = Entry(valueFrame, width=30)
+valueUnknown2Entry.bind("<FocusOut>", lambda e: writeValue("unknown2", valueUnknown2Entry.get()))
+valueUnknown2Entry.bind("<Return>", lambda e: writeValue("unknown2", valueUnknown2Entry.get()))
 valueUnknown2Entry.pack()
+
 valuePosXEntry = Entry(valueFrame, width=30)
+valuePosXEntry.bind("<FocusOut>", lambda e: writeValue("posX", valuePosXEntry.get()))
+valuePosXEntry.bind("<Return>", lambda e: writeValue("posX", valuePosXEntry.get()))
 valuePosXEntry.pack()
+
 valuePosYEntry = Entry(valueFrame, width=30)
+valuePosYEntry.bind("<FocusOut>", lambda e: writeValue("posY", valuePosYEntry.get()))
+valuePosYEntry.bind("<Return>", lambda e: writeValue("posY", valuePosYEntry.get()))
 valuePosYEntry.pack()
+
 valuePosZEntry = Entry(valueFrame, width=30)
+valuePosZEntry.bind("<FocusOut>", lambda e: writeValue("posZ", valuePosZEntry.get()))
+valuePosZEntry.bind("<Return>", lambda e: writeValue("posZ", valuePosZEntry.get()))
 valuePosZEntry.pack()
+
 valueStretchXEntry = Entry(valueFrame, width=30)
+valueStretchXEntry.bind("<FocusOut>", lambda e: writeValue("stretchX", valueStretchXEntry.get()))
+valueStretchXEntry.bind("<Return>", lambda e: writeValue("stretchX", valueStretchXEntry.get()))
 valueStretchXEntry.pack()
+
 valueUnknown4Entry = Entry(valueFrame, width=30)
+valueUnknown4Entry.bind("<FocusOut>", lambda e: writeValue("unknown4", valueUnknown4Entry.get()))
+valueUnknown4Entry.bind("<Return>", lambda e: writeValue("unknown4", valueUnknown4Entry.get()))
 valueUnknown4Entry.pack()
+
 valueUnknown5Entry = Entry(valueFrame, width=30)
+valueUnknown5Entry.bind("<FocusOut>", lambda e: writeValue("unknown5", valueUnknown5Entry.get()))
+valueUnknown5Entry.bind("<Return>", lambda e: writeValue("unknown5", valueUnknown5Entry.get()))
 valueUnknown5Entry.pack()
+
 valueUnknown6Entry = Entry(valueFrame, width=30)
+valueUnknown6Entry.bind("<FocusOut>", lambda e: writeValue("unknown6", valueUnknown6Entry.get()))
+valueUnknown6Entry.bind("<Return>", lambda e: writeValue("unknown6", valueUnknown6Entry.get()))
 valueUnknown6Entry.pack()
+
 valueUnknown7Entry = Entry(valueFrame, width=30)
+valueUnknown7Entry.bind("<FocusOut>", lambda e: writeValue("unknown7", valueUnknown7Entry.get()))
+valueUnknown7Entry.bind("<Return>", lambda e: writeValue("unknown7", valueUnknown7Entry.get()))
 valueUnknown7Entry.pack()
+
 valueUnknown8Entry = Entry(valueFrame, width=30)
+valueUnknown8Entry.bind("<FocusOut>", lambda e: writeValue("unknown8", valueUnknown8Entry.get()))
+valueUnknown8Entry.bind("<Return>", lambda e: writeValue("unknown8", valueUnknown8Entry.get()))
 valueUnknown8Entry.pack()
+
 valueUnknown9Entry = Entry(valueFrame, width=30)
+valueUnknown9Entry.bind("<FocusOut>", lambda e: writeValue("unknown9", valueUnknown9Entry.get()))
+valueUnknown9Entry.bind("<Return>", lambda e: writeValue("unknown9", valueUnknown9Entry.get()))
 valueUnknown9Entry.pack()
+
 valueUnknown10Entry = Entry(valueFrame, width=30)
+valueUnknown10Entry.bind("<FocusOut>", lambda e: writeValue("unknown10", valueUnknown10Entry.get()))
+valueUnknown10Entry.bind("<Return>", lambda e: writeValue("unknown10", valueUnknown10Entry.get()))
 valueUnknown10Entry.pack()
+
 valueHeaderEndEntry = Entry(valueFrame, width=30)
+valueHeaderEndEntry.bind("<FocusOut>", lambda e: writeValue("headerEnd", valueHeaderEndEntry.get()))
+valueHeaderEndEntry.bind("<Return>", lambda e: writeValue("headerEnd", valueHeaderEndEntry.get()))
 valueHeaderEndEntry.pack()
+
 
 #valueListbox = Listbox(propertyFrame, width=20, height=19)
 #valueListbox.insert(0, "Name")

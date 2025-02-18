@@ -75,5 +75,3 @@ class Layer:
             entity = Entity(self, entityOffset)
             entityList.append(entity)
             entityNumber+=1
-
-

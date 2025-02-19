@@ -70,15 +70,16 @@ def enableValues():
     valueUnknown10Entry.configure(state=NORMAL)
     valueHeaderEndEntry.configure(state=NORMAL) # Header End can not be changed
 
-# Command for opening a .lvb file
+# Function for opening a .lvb file. Command opens the file, makes a list of the layers from the file for the user to modify, then closes the file. The file is reopened for saving during saveFile()
 def openFile():
+    closeFile()
     global filePath
     filePath = filedialog.askopenfilename(title="Select .lvb or .pak file", filetypes=[("*.lvb", ".lvb"), ("*.pak", ".pak")])
     fileName = os.path.split(filePath)[1]
     global file
     layerListbox.event_generate("<<ListboxUnselect>>")
     entityListbox.event_generate("<<ListboxUnselect>>")
-    file = open(filePath, 'r+b')
+    file = open(filePath, 'rb')
     layerListbox.delete(0, END)
     entityListbox.delete(0, END)
     clearValues()
@@ -101,13 +102,16 @@ def openFile():
     root.title("LVB-Edit: "+fileName)
     global fileChanges
     fileChanges = []
+    file.close()
+    closeFileButton.configure(state=NORMAL)
+    saveFileButton.configure(state=NORMAL)
 
-# Command for closing the currently-open .lvb file
+# Function for closing the currently-open .lvb file. Now that the file is closed during openFile() and reopened during saveFile(), this only has a visual purpose
 def closeFile():
     global file
     layerListbox.event_generate("<<ListboxUnselect>>")
     entityListbox.event_generate("<<ListboxUnselect>>")
-    file.close()
+    #file.close() # File now closed during openFile()
     layerListbox.delete(0, END)
     entityListbox.delete(0, END)
     clearValues()
@@ -116,14 +120,19 @@ def closeFile():
     global selectedLayer
     currentEntity = None
     selectedLayer = None
+    closeFileButton.configure(state=DISABLED)
+    saveFileButton.configure(state=DISABLED)
     root.title("LVB-Edit: No File")
 
-# Function to save the currently-open .lvb file
+# Function to save the currently-open .lvb file. Opens the file with write permissions, save changes, then closes the file again.
 def saveFile():
     global layerList
     global file
     global fileOffset
+    global filePath
+    file = open(filePath, 'r+b')
     saveHandler.saveLevelFile(layerList, fileChanges, file, fileOffset)
+    file.close()
     #print("To be implemented")
 
 # Frame that holds open and close file buttons
@@ -135,11 +144,11 @@ openFileButton = Button(fileButtonFrame, text="Open File", state=NORMAL, padx=10
 openFileButton.grid(row=0, column=0)
 
 # Button to close a .lvb file
-closeFileButton = Button(fileButtonFrame, text="Close File", state=NORMAL, padx=10, pady=5, command=closeFile)
+closeFileButton = Button(fileButtonFrame, text="Close File", state=DISABLED, padx=10, pady=5, command=closeFile)
 closeFileButton.grid(row=0, column=1)
 
 # Button to close a .lvb file
-saveFileButton = Button(fileButtonFrame, text="Save File", state=NORMAL, padx=10, pady=5, command=saveFile)
+saveFileButton = Button(fileButtonFrame, text="Save File", state=DISABLED, padx=10, pady=5, command=saveFile)
 saveFileButton.grid(row=0, column=2)
 
 # Frame that shows all entity layers
@@ -202,7 +211,9 @@ def onLayerSelect(self):
                 entityListbox.insert(END, Entity.name)
 
 # Refreshes the entity list. Used when updating any values in an entity. Makes sure names dynamically update in entity list
+## Currently not referenced, as the main purpose would be to dynamically update names in layers and renaming entities is not currently supported.
 def entityListRefresh():
+    entityScrollbar.configure(state=DISABLED) # The "state" option does not exist on scrollbars. However for some reason, this fixes a bug where the scrollbar would scroll back to the top on every entityListRefresh(), so it'll stay here despite throwing internal errors
     global selectedLayer
     global currentEntity
     tempEntity = currentEntity
@@ -330,9 +341,10 @@ def writeValue(property, value):
                                 if entity != currentEntity:
                                     fileChanges.append(currentEntity)
                         print(fileChanges)
+                        
         else:
             print("User will be prompted with error message and value will not be changed")
-        entityListRefresh()
+            #entityListRefresh() # Commented out due to not having a functional purpose until renaming entities is a function of this program
 
 # List of Entries for viewing and modifying entity properties. This is also messy like the property Entries but maybe I'll fix it when Nova yells at me later about it. (Hi Nova :3)
 # Also the Entries with the events commented out are not editable. Name and Index may be editable one day, but Type and Header End will not be.

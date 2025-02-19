@@ -20,8 +20,10 @@ def openLevelFile(levelFile, fileExtension):
         bytesToFind = b'.lvb'
         file.seek(0)
         fileString = file.read()
-        extensionLocation = fileString.find(bytesToFind)-57
+        extensionLocation = fileString.find(bytesToFind)
         file.seek(extensionLocation)
+        while file.read(3) != b'END':
+            file.seek(-4, 1)
         fileOffsetFromHeader = int.from_bytes(file.read(4), "little")
         print("other number: "+str(fileOffsetFromHeader))
         fileOffset = headerSize+fileOffsetFromHeader+64

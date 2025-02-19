@@ -1,11 +1,11 @@
 import fileHandler
 
-def saveLVBFile(filePath, layerList, fileChanges, file):
-    writeFileHeader(layerList, file)
+def saveLevelFile(layerList, fileChanges, file, fileOffset):
+    writeFileHeader(layerList, file, fileOffset)
     for change in fileChanges:
-        writeEntityHeader(change, file)
+        writeEntityHeader(change, file, fileOffset)
 
-def writeFileHeader(layerList, file):
+def writeFileHeader(layerList, file, fileOffset):
     header = bytearray()
     header+=(b'\x00\x00\x00\x00')
     header+=(layerList[0].numberOfEntities.to_bytes(4, "little"))
@@ -28,10 +28,10 @@ def writeFileHeader(layerList, file):
     header+=(layerList[4].offset.to_bytes(4, "little"))
     header+=(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
     #print(header.hex())
-    file.seek(0)
+    file.seek(fileOffset)
     file.write(header)
 
-def writeEntityHeader(entity, file):
+def writeEntityHeader(entity, file, fileOffset):
     entityHeaderString = ""
     entityHeaderString+=entity.type
     entityHeaderString+=entity.unknown1
@@ -51,5 +51,5 @@ def writeEntityHeader(entity, file):
     entityHeaderString+=entity.headerEnd
     entityHeader = bytearray.fromhex(entityHeaderString)
     #print(entityHeader.hex())
-    file.seek(int(entity.offset, 16))
+    file.seek(int(entity.offset, 16)+fileOffset)
     file.write(entityHeader)

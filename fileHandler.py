@@ -2,10 +2,31 @@
 # filePath = input("Enter file directory: ")
 # file = open(filePath, 'rb')
 
-def openLVBFile(LVBFile):
+def openLevelFile(levelFile, fileExtension):
 
     global file
-    file = LVBFile
+    file = levelFile
+
+    global fileOffset
+    if fileExtension == "lvb":
+        print("lvb")
+        fileOffset = 0
+
+    # Since the .lvb file is embedded in the .pak file, we must determine the offset of the .lvb file within the .pak file and .seek() to it
+    elif fileExtension == "pak":
+        print("pak")
+        headerSize = int.from_bytes(file.read(4), "little")
+        print("header number: " + str(headerSize))
+        bytesToFind = b'.lvb'
+        file.seek(0)
+        fileString = file.read()
+        extensionLocation = fileString.find(bytesToFind)-57
+        file.seek(extensionLocation)
+        fileOffsetFromHeader = int.from_bytes(file.read(4), "little")
+        print("other number: "+str(fileOffsetFromHeader))
+        fileOffset = headerSize+fileOffsetFromHeader+64
+        print(fileOffset)
+        file.seek(fileOffset)
 
     # Header of .lvb file is separated
     global header
@@ -26,14 +47,14 @@ def openLVBFile(LVBFile):
     layer5 = Layer(int.from_bytes(header[72:76], "little"), int.from_bytes(header[64:68], "little"), entityList5)
     layerList = [layer1, layer2, layer3, layer4, layer5]
 
-    return layerList
+    return layerList, fileOffset
 
 # Entity objects represent all of the entities that are within the .lvb files. Regardless of type, entities all share the same header format. Different entity types will have different data following their "headerEnd", which should always be "FFFFFFFF"
 class Entity:
     def __init__(self, layer, offset):
         self.offset = hex(offset)
         self.layer = layer
-        file.seek(offset, 0)
+        file.seek(offset+fileOffset, 0)
         self.type = file.read(8).hex()
         self.unknown1 = file.read(4).hex()
         index = file.read(4)
@@ -53,10 +74,10 @@ class Entity:
         self.headerEnd = file.read(4).hex()
         nameLocation = int.from_bytes(header[72:76], "little")+((int.from_bytes(index, "little"))*8)
         self.nameLocation = hex(nameLocation)
-        file.seek(nameLocation, 0)
+        file.seek(nameLocation+fileOffset, 0)
         nameOffset = int.from_bytes(file.read(8), "little")
         self.nameOffset = hex(nameOffset)
-        file.seek(nameOffset, 0)
+        file.seek(nameOffset+fileOffset, 0)
         nameLength = int.from_bytes(file.read(4), "little")
         self.nameLength = hex(nameLength)
         self.name = file.read(nameLength)
@@ -66,7 +87,7 @@ class NameEntity:
     def __init__(self, layer, offset):
         self.offset = hex(offset)
         self.layer = layer
-        file.seek(offset, 0)
+        file.seek(offset+fileOffset, 0)
         self.length = int.from_bytes(file.read(4), "little")
         self.entry = file.read(self.length).hex()
 
@@ -80,7 +101,7 @@ class Layer:
         if len(entityList) == 0:
             self.type = "entity"
             while(entityNumber < numberOfEntities):
-                entityLocation = offset+(entityNumber*8)
+                entityLocation = offset+(entityNumber*8)+fileOffset
                 file.seek(entityLocation, 0)
                 entityOffset = int.from_bytes(file.read(8), "little")
                 entity = Entity(self, entityOffset)
@@ -90,7 +111,7 @@ class Layer:
             self.type = "name"
             entityList.clear()
             while(entityNumber < numberOfEntities):
-                entityLocation = offset+(entityNumber*8)
+                entityLocation = offset+(entityNumber*8)+fileOffset
                 file.seek(entityLocation, 0)
                 nameEntityOffset = int.from_bytes(file.read(8), "little")
                 nameEntity = NameEntity(self, nameEntityOffset)

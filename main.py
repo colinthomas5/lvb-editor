@@ -73,7 +73,7 @@ def enableValues():
 # Command for opening a .lvb file
 def openFile():
     global filePath
-    filePath = filedialog.askopenfilename(title="Select .lvb file", filetypes=[("*.lvb", ".lvb")])
+    filePath = filedialog.askopenfilename(title="Select .lvb or .pak file", filetypes=[("*.lvb", ".lvb"), ("*.pak", ".pak")])
     fileName = os.path.split(filePath)[1]
     global file
     layerListbox.event_generate("<<ListboxUnselect>>")
@@ -83,7 +83,12 @@ def openFile():
     entityListbox.delete(0, END)
     clearValues()
     global layerList
-    layerList = fileHandler.openLVBFile(file)
+    fileExtension = filePath.split(".", 1)[1]
+    print(fileExtension)
+    openLevel = fileHandler.openLevelFile(file, fileExtension)
+    layerList = openLevel[0]
+    global fileOffset
+    fileOffset = openLevel[1]
     global originalLayerList
     originalLayerList = layerList
     layerNumber=1
@@ -115,10 +120,10 @@ def closeFile():
 
 # Function to save the currently-open .lvb file
 def saveFile():
-    global filePath
     global layerList
     global file
-    saveHandler.saveLVBFile(filePath, layerList, fileChanges, file)
+    global fileOffset
+    saveHandler.saveLevelFile(layerList, fileChanges, file, fileOffset)
     #print("To be implemented")
 
 # Frame that holds open and close file buttons

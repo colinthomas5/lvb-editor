@@ -1,4 +1,6 @@
 import os
+import sys
+import io
 import fileHandler
 import saveHandler
 from tkinter import *
@@ -9,6 +11,8 @@ root = Tk()
 root.title("LVB-Edit: No File")
 root.resizable(False, False)
 layerList = []
+global file
+file = None
 
 # Clears all values under the "value" column in the properties frame. Called when changing entities, layers, and files.
 def clearValues():
@@ -72,11 +76,13 @@ def enableValues():
 
 # Function for opening a .lvb file. Command opens the file, makes a list of the layers from the file for the user to modify, then closes the file. The file is reopened for saving during saveFile()
 def openFile():
-    closeFile()
+    global file
+    if file != None:
+        closeFile()
     global filePath
     filePath = filedialog.askopenfilename(title="Select .lvb or .pak file", filetypes=[("*.lvb", ".lvb"), ("*.pak", ".pak")])
+    global fileName
     fileName = os.path.split(filePath)[1]
-    global file
     layerListbox.event_generate("<<ListboxUnselect>>")
     entityListbox.event_generate("<<ListboxUnselect>>")
     file = open(filePath, 'rb')
@@ -85,7 +91,6 @@ def openFile():
     clearValues()
     global layerList
     fileExtension = filePath.split(".", 1)[1]
-    print(fileExtension)
     openLevel = fileHandler.openLevelFile(file, fileExtension)
     layerList = openLevel[0]
     global fileOffset
@@ -105,10 +110,11 @@ def openFile():
     file.close()
     closeFileButton.configure(state=NORMAL)
     saveFileButton.configure(state=NORMAL)
+    print(fileName + " has been successfully opened (Path: " + filePath + ")")
+
 
 # Function for closing the currently-open .lvb file. Now that the file is closed during openFile() and reopened during saveFile(), this only has a visual purpose
 def closeFile():
-    global file
     layerListbox.event_generate("<<ListboxUnselect>>")
     entityListbox.event_generate("<<ListboxUnselect>>")
     #file.close() # File now closed during openFile()
@@ -123,17 +129,27 @@ def closeFile():
     closeFileButton.configure(state=DISABLED)
     saveFileButton.configure(state=DISABLED)
     root.title("LVB-Edit: No File")
+    global file
+    file = None
+    global fileName
+    print(fileName+": File has been closed")
 
 # Function to save the currently-open .lvb file. Opens the file with write permissions, save changes, then closes the file again.
 def saveFile():
     global layerList
+    global fileChanges
     global file
     global fileOffset
     global filePath
-    file = open(filePath, 'r+b')
-    saveHandler.saveLevelFile(layerList, fileChanges, file, fileOffset)
-    file.close()
-    #print("To be implemented")
+    global fileName
+    if len(fileChanges) != 0:
+        file = open(filePath, 'r+b')
+        saveHandler.saveLevelFile(layerList, fileChanges, file, fileOffset)
+        file.close()
+        fileChanges.clear()
+        print(fileName+": Changes to file have been saved")
+    else:
+        print(fileName+": No changes to file were made, so nothing was saved")
 
 # Frame that holds open and close file buttons
 fileButtonFrame = LabelFrame(root, padx=5, pady=5)
@@ -150,6 +166,31 @@ closeFileButton.grid(row=0, column=1)
 # Button to close a .lvb file
 saveFileButton = Button(fileButtonFrame, text="Save File", state=DISABLED, padx=10, pady=5, command=saveFile)
 saveFileButton.grid(row=0, column=2)
+
+# Section to print the terminal to users. This serves to give the user feedback on what actions they are taking
+systemMessageFrame = LabelFrame(root, text="System Messages", padx=5, pady=5)
+systemMessageFrame.grid(row=3, column=0, columnspan=6, sticky="EW")
+
+class OutputRedirector(io.TextIOBase):
+    def __init__(self, textWidget):
+        self.textWidget = textWidget
+
+    def write(self, string):
+        self.textWidget.insert(END, string)
+        self.textWidget.see(END)  # Auto-scroll to the bottom
+
+    def flush(self):
+        pass
+
+systemMessageText = Text(systemMessageFrame, height=5, width=101)
+systemMessageText.grid(row=0, column=1, sticky="EW")
+systemMessageText.bind("<Key>", lambda e: "break")
+sys.stdout = OutputRedirector(systemMessageText)
+
+# Scrollbar for above text
+systemMessageScrollbar = Scrollbar(systemMessageFrame, orient="vertical", command=systemMessageText.yview)
+systemMessageScrollbar.grid(row=0, column=0, sticky="NS")
+systemMessageText.configure(yscrollcommand=systemMessageScrollbar.set)
 
 # Frame that shows all entity layers
 layerFrame = LabelFrame(root, text="Layers", padx=5, pady=5)
@@ -168,26 +209,32 @@ def onEntitySelect(self):
     for selection in entityListbox.curselection():
         global currentEntity
         currentEntity = selectedLayer.entityList[selection]
-        valueNameEntry.insert(0, currentEntity.name)
-        valueTypeEntry.insert(1, currentEntity.type)
-        valueUnknown1Entry.insert(2, currentEntity.unknown1)
-        valueIndexEntry.insert(3, currentEntity.index)
-        valueUnknown2Entry.insert(4, currentEntity.unknown2)
-        valuePosXEntry.insert(5, currentEntity.posX)
-        valuePosYEntry.insert(6, currentEntity.posY)
-        valuePosZEntry.insert(7, currentEntity.posZ)
-        valueStretchXEntry.insert(8, currentEntity.stretchX)
-        valueUnknown4Entry.insert(9, currentEntity.unknown4)
-        valueUnknown5Entry.insert(10, currentEntity.unknown5)
-        valueUnknown6Entry.insert(11, currentEntity.unknown6)
-        valueUnknown7Entry.insert(12, currentEntity.unknown7)
-        valueUnknown8Entry.insert(13, currentEntity.unknown8)
-        valueUnknown9Entry.insert(14, currentEntity.unknown9)
-        valueUnknown10Entry.insert(15, currentEntity.unknown10)
-        valueHeaderEndEntry.insert(16, currentEntity.headerEnd)
+        refreshValues()
+
+# Refreshes all values for the current entity
+def refreshValues():
+    global currentEntity
+    clearValues()
+    valueNameEntry.insert(0, currentEntity.name)
+    valueTypeEntry.insert(1, currentEntity.type)
+    valueUnknown1Entry.insert(2, currentEntity.unknown1)
+    valueIndexEntry.insert(3, currentEntity.index)
+    valueUnknown2Entry.insert(4, currentEntity.unknown2)
+    valuePosXEntry.insert(5, currentEntity.posX)
+    valuePosYEntry.insert(6, currentEntity.posY)
+    valuePosZEntry.insert(7, currentEntity.posZ)
+    valueStretchXEntry.insert(8, currentEntity.stretchX)
+    valueUnknown4Entry.insert(9, currentEntity.unknown4)
+    valueUnknown5Entry.insert(10, currentEntity.unknown5)
+    valueUnknown6Entry.insert(11, currentEntity.unknown6)
+    valueUnknown7Entry.insert(12, currentEntity.unknown7)
+    valueUnknown8Entry.insert(13, currentEntity.unknown8)
+    valueUnknown9Entry.insert(14, currentEntity.unknown9)
+    valueUnknown10Entry.insert(15, currentEntity.unknown10)
+    valueHeaderEndEntry.insert(16, currentEntity.headerEnd)
 
 # Listbox that shows all entity layers
-entityListbox = Listbox(entityFrame, width=40, height=21)
+entityListbox = Listbox(entityFrame, selectmode = SINGLE, width=40, height=21)
 entityListbox.grid(row=0, column=1, sticky="W")
 entityListbox.bind("<<ListboxSelect>>", onEntitySelect)
 
@@ -223,11 +270,11 @@ def entityListRefresh():
     currentEntity = tempEntity
 
 # Listbox that shows all entity layers
-layerListbox = Listbox(layerFrame, width=10, height=21)
+layerListbox = Listbox(layerFrame, selectmode = SINGLE, width=10, height=21)
 layerListbox.grid(row=0, column=0, sticky="W")
 layerListbox.bind("<<ListboxSelect>>", onLayerSelect)
 
-# Frame that holds both property and value fields
+# Frame that holds both property and value fields for properties that all entities have, regardless of type
 propertyFrame = LabelFrame(root, text="Properties", padx=5, pady=4)
 propertyFrame.grid(row=2, column=2, sticky="W")
 
@@ -323,28 +370,46 @@ propertyHeaderEndEntry.insert(16, "HeaderEnd")
 propertyHeaderEndEntry.bind("<Key>", lambda e: "break")
 propertyHeaderEndEntry.pack()
 
+# Frame that holds both property and value fields for properties specific to types
+## To be implemented
+typePropertyFrame = LabelFrame(root, text="Type Properties", padx=5, pady=4)
+typePropertyFrame.grid(row=2, column=3, sticky="W")
+
+typePropertyText = Text(typePropertyFrame, height=21, width=24)
+typePropertyText.pack()
+typePropertyText.insert(END, "To be implemented")
+typePropertyText.configure(state=DISABLED)
+
 # Writes any values changed back to the currently-selected entity object
 def writeValue(property, value):
-        global currentEntity
-        if (property == "type" and len(value) and int(value, 16)) == 16 or property != "name" and len(value) == 8 and int(value, 16):
-            for key in currentEntity.__dict__.keys():
-                if key == property:
-                    if currentEntity.__dict__.get(key) != value:
-                        print(key)
-                        print(currentEntity.__dict__.get(key))
-                        print(value)
-                        currentEntity.__dict__.update({key : value})
-                        if len(fileChanges) == 0:
-                            fileChanges.append(currentEntity)
-                        else:
-                            for entity in fileChanges:
-                                if entity != currentEntity:
-                                    fileChanges.append(currentEntity)
-                        print(fileChanges)
-                        
-        else:
-            print("User will be prompted with error message and value will not be changed")
-            #entityListRefresh() # Commented out due to not having a functional purpose until renaming entities is a function of this program
+    global currentEntity
+    # Checks Entry widget for a valid hex entry. If property = "name", a different check and value replacement method would have to be used
+    if property != "name" and len(value) == 8:
+        try:
+            int(value, 16)
+        except ValueError:
+            refreshValues()
+            print(currentEntity.name.decode()+": Value entered for "+property+" is invalid; The value of "+property+" was not changed")
+            #return
+        for key in currentEntity.__dict__.keys():
+            if key == property:
+                if currentEntity.__dict__.get(key) != value:
+                    #print(key)
+                    print(currentEntity.name.decode()+": Value of "+property+" updated from "+currentEntity.__dict__.get(key)+" to "+value)
+                    #print(value)
+                    currentEntity.__dict__.update({key : value})
+                    if len(fileChanges) == 0:
+                        fileChanges.append(currentEntity)
+                    else:
+                        for entity in fileChanges:
+                            if entity != currentEntity:
+                                fileChanges.append(currentEntity)
+                    #print(fileChanges)
+                    
+    else:
+        print(currentEntity.name.decode()+": Value entered for "+property+" is invalid; The value of "+property+" was not changed")
+    refreshValues()
+        #entityListRefresh() # Commented out due to not having a functional purpose until renaming entities is a function of this program
 
 # List of Entries for viewing and modifying entity properties. This is also messy like the property Entries but maybe I'll fix it when Nova yells at me later about it. (Hi Nova :3)
 # Also the Entries with the events commented out are not editable. Name and Index may be editable one day, but Type and Header End will not be.

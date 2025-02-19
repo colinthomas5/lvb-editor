@@ -5,6 +5,10 @@ A basic editor for .lvb files from games that use the WayForward Engine
 This is a basic level editor for games made by WayForward that use the .lvb level format, which is stored within the game's .pak files. This project is made specifically for compatability with .lvb and .pak files from Adventure Time: Secret of the Nameless Kingdom, however it may function with over WayForward games that use .lvb files stored in .pak files.
 
 ## Development Log
+2/19/25 - Failsafes were added to minimize the ability for a user to create an incompatible file. System messages section was also created, which gives feedback to the user while they are editing files.
+
+There are multiple steps that can be taken next: Research unknown entity properties, implement type properties, make the property values more user-readable (ie. display position values in decimal rather than hex). I don't think any one is a better step to take than the other, so what happens next will depend on my mood next time I work on this.
+
 2/18/25 - New saveHandler.py created, which handles the process of saving changes to the .lvb file once the save button is pressed. The save button now has functionality, saving any changes made to entities. Numerous bugs were also squashed and some entities are now not able to be modified (some due to not being able to be modified YET, some due to not being able to be modified PERIOD).
 
 Part 2: Support for opening and saving to .pak files is now added. Now that changes are easier to test, unknown values for entities should be determined and implemented. Additionally, support for modifying type-specific properties should be implemented, as well as showing types as words rather than their respective hex values.

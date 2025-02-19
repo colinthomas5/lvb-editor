@@ -9,14 +9,11 @@ def openLevelFile(levelFile, fileExtension):
 
     global fileOffset
     if fileExtension == "lvb":
-        print("lvb")
         fileOffset = 0
 
     # Since the .lvb file is embedded in the .pak file, we must determine the offset of the .lvb file within the .pak file and .seek() to it
     elif fileExtension == "pak":
-        print("pak")
         headerSize = int.from_bytes(file.read(4), "little")
-        print("header number: " + str(headerSize))
         bytesToFind = b'.lvb'
         file.seek(0)
         fileString = file.read()
@@ -25,9 +22,7 @@ def openLevelFile(levelFile, fileExtension):
         while file.read(3) != b'END':
             file.seek(-4, 1)
         fileOffsetFromHeader = int.from_bytes(file.read(4), "little")
-        print("other number: "+str(fileOffsetFromHeader))
         fileOffset = headerSize+fileOffsetFromHeader+64
-        print(fileOffset)
         file.seek(fileOffset)
 
     # Header of .lvb file is separated

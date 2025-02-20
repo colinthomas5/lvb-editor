@@ -55,7 +55,7 @@ class Entity:
         self.type = file.read(8).hex()
         self.unknown1 = file.read(4).hex()
         index = file.read(4)
-        self.index = index.hex()
+        self.index = file.read(4).hex()
         self.unknown2 = file.read(4).hex()
         self.posX = file.read(4).hex()
         self.posY = file.read(4).hex()

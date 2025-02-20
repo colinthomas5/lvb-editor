@@ -9,6 +9,8 @@ This is a basic level editor for games made by WayForward that use the .lvb leve
 
 There are multiple steps that can be taken next: Research unknown entity properties, implement type properties, make the property values more user-readable (ie. display position values in decimal rather than hex). I don't think any one is a better step to take than the other, so what happens next will depend on my mood next time I work on this.
 
+Part 2: New entityTypes.py created, which will store information and functions regarding entity types. Currently only has a list of entity type hex values and a list of entity type names, as well as a function that returns the name for a given entity type hex value. The program now displays the entity type as its name to the user, although most entities are named based on their entity type.
+
 2/18/25 - New saveHandler.py created, which handles the process of saving changes to the .lvb file once the save button is pressed. The save button now has functionality, saving any changes made to entities. Numerous bugs were also squashed and some entities are now not able to be modified (some due to not being able to be modified YET, some due to not being able to be modified PERIOD).
 
 Part 2: Support for opening and saving to .pak files is now added. Now that changes are easier to test, unknown values for entities should be determined and implemented. Additionally, support for modifying type-specific properties should be implemented, as well as showing types as words rather than their respective hex values.

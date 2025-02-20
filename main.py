@@ -2,6 +2,7 @@ import os
 import sys
 import io
 import fileHandler
+import entityTypes
 import saveHandler
 from tkinter import *
 from tkinter import filedialog
@@ -216,7 +217,7 @@ def refreshValues():
     global currentEntity
     clearValues()
     valueNameEntry.insert(0, currentEntity.name)
-    valueTypeEntry.insert(1, currentEntity.type)
+    valueTypeEntry.insert(1, entityTypes.getTypeName(currentEntity.type))
     valueUnknown1Entry.insert(2, currentEntity.unknown1)
     valueIndexEntry.insert(3, currentEntity.index)
     valueUnknown2Entry.insert(4, currentEntity.unknown2)
@@ -275,12 +276,12 @@ layerListbox.grid(row=0, column=0, sticky="W")
 layerListbox.bind("<<ListboxSelect>>", onLayerSelect)
 
 # Frame that holds both property and value fields for properties that all entities have, regardless of type
-propertyFrame = LabelFrame(root, text="Properties", padx=5, pady=4)
+propertyFrame = LabelFrame(root, text="Properties", padx=5, pady=1)
 propertyFrame.grid(row=2, column=2, sticky="W")
 
 # List of properties that each entity has despite type
-propertyLabel = Label(propertyFrame, text="Property", width=8)
-propertyLabel.grid(row=0, column=0, sticky="NW")
+propertyLabel = Label(propertyFrame, text="Property", justify=CENTER)
+propertyLabel.grid(row=0, column=0)
 propertyLabelFrame = LabelFrame(propertyFrame, width=8)
 propertyLabelFrame.grid(row=1, column=0, sticky="NS")
 
@@ -372,7 +373,7 @@ propertyHeaderEndEntry.pack()
 
 # Frame that holds both property and value fields for properties specific to types
 ## To be implemented
-typePropertyFrame = LabelFrame(root, text="Type Properties", padx=5, pady=4)
+typePropertyFrame = LabelFrame(root, text="Type Properties", padx=5, pady=5)
 typePropertyFrame.grid(row=2, column=3, sticky="W")
 
 typePropertyText = Text(typePropertyFrame, height=21, width=24)
@@ -413,10 +414,10 @@ def writeValue(property, value):
 
 # List of Entries for viewing and modifying entity properties. This is also messy like the property Entries but maybe I'll fix it when Nova yells at me later about it. (Hi Nova :3)
 # Also the Entries with the events commented out are not editable. Name and Index may be editable one day, but Type and Header End will not be.
-valueLabel = Label(propertyFrame, text="Value")
+valueLabel = Label(propertyFrame, text="Value", justify=CENTER)
 valueLabel.grid(row=0, column=1)
 valueFrame = LabelFrame(propertyFrame)
-valueFrame.grid(row=1, column=1, sticky="NSW")
+valueFrame.grid(row=1, column=1)
 
 valueNameEntry = Entry(valueFrame, width=30, state=DISABLED, bg='#f0f0f0')
 #valueNameEntry.bind("<FocusOut>", lambda e: writeValue("name", bytes(valueNameEntry.get(), "utf-8")))

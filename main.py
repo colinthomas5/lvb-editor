@@ -78,21 +78,26 @@ def enableValues():
 # Function for opening a .lvb file. Command opens the file, makes a list of the layers from the file for the user to modify, then closes the file. The file is reopened for saving during saveFile()
 def openFile():
     global file
-    if file != None:
-        closeFile()
     global filePath
-    filePath = filedialog.askopenfilename(title="Select .lvb or .pak file", filetypes=[("*.lvb", ".lvb"), ("*.pak", ".pak")])
     global fileName
-    fileName = os.path.split(filePath)[1]
+    filePath = filedialog.askopenfilename(title="Select .lvb or .pak file", filetypes=[("*.lvb", ".lvb"), ("*.pak", ".pak")])
+    try:
+        file = open(filePath, 'rb')
+        fileExtension = filePath.split(".", 1)[1]
+        openLevel = fileHandler.openLevelFile(file, fileExtension)
+        fileName = os.path.split(filePath)[1]
+    except FileNotFoundError:
+        print("No file was selected; The current file will remain open.")
+        return
+    except OSError:
+        print("The selected file is unable to be modified; The current file will remain open.")
+        return
     layerListbox.event_generate("<<ListboxUnselect>>")
     entityListbox.event_generate("<<ListboxUnselect>>")
-    file = open(filePath, 'rb')
     layerListbox.delete(0, END)
     entityListbox.delete(0, END)
     clearValues()
     global layerList
-    fileExtension = filePath.split(".", 1)[1]
-    openLevel = fileHandler.openLevelFile(file, fileExtension)
     layerList = openLevel[0]
     global fileOffset
     fileOffset = openLevel[1]
@@ -101,18 +106,16 @@ def openFile():
     layerNumber=1
     for Layer in layerList:
         if Layer.type == "entity":
-            layerListbox.insert(END, "Layer "+str(layerNumber))
+            layerListbox.insert(END, "Layer " + str(layerNumber))
             layerNumber+=1
     layerListbox.select_set(0)
     layerListbox.event_generate("<<ListboxSelect>>")
-    root.title("LVB-Edit: "+fileName)
+    root.title("LVB-Edit: " + fileName)
     global fileChanges
     fileChanges = []
     file.close()
     closeFileButton.configure(state=NORMAL)
-    saveFileButton.configure(state=NORMAL)
-    print(fileName + " has been successfully opened (Path: " + filePath + ")")
-
+    print(fileName + ": File opened.")
 
 # Function for closing the currently-open .lvb file. Now that the file is closed during openFile() and reopened during saveFile(), this only has a visual purpose
 def closeFile():
@@ -133,7 +136,7 @@ def closeFile():
     global file
     file = None
     global fileName
-    print(fileName+": File has been closed")
+    print(fileName + ": File closed.")
 
 # Function to save the currently-open .lvb file. Opens the file with write permissions, save changes, then closes the file again.
 def saveFile():
@@ -143,14 +146,12 @@ def saveFile():
     global fileOffset
     global filePath
     global fileName
-    if len(fileChanges) != 0:
-        file = open(filePath, 'r+b')
-        saveHandler.saveLevelFile(layerList, fileChanges, file, fileOffset)
-        file.close()
-        fileChanges.clear()
-        print(fileName+": Changes to file have been saved")
-    else:
-        print(fileName+": No changes to file were made, so nothing was saved")
+    file = open(filePath, 'r+b')
+    saveHandler.saveLevelFile(layerList, fileChanges, file, fileOffset)
+    file.close()
+    fileChanges.clear()
+    saveFileButton.configure(state=DISABLED)
+    print(fileName + ": File saved.")
 
 # Frame that holds open and close file buttons
 fileButtonFrame = LabelFrame(root, padx=5, pady=5)
@@ -390,14 +391,11 @@ def writeValue(property, value):
             int(value, 16)
         except ValueError:
             refreshValues()
-            print(currentEntity.name.decode()+": Value entered for "+property+" is invalid; The value of "+property+" was not changed")
-            #return
+            print(currentEntity.name.decode() + ": The value of " + property + " was not updated; Value \"" + value + "\" is invalid.")
         for key in currentEntity.__dict__.keys():
             if key == property:
                 if currentEntity.__dict__.get(key) != value:
-                    #print(key)
-                    print(currentEntity.name.decode()+": Value of "+property+" updated from "+currentEntity.__dict__.get(key)+" to "+value)
-                    #print(value)
+                    print(currentEntity.name.decode() + ": Value of " + property + " updated from \"" + currentEntity.__dict__.get(key) + "\" to \"" + value + "\".")
                     currentEntity.__dict__.update({key : value})
                     if len(fileChanges) == 0:
                         fileChanges.append(currentEntity)
@@ -405,10 +403,10 @@ def writeValue(property, value):
                         for entity in fileChanges:
                             if entity != currentEntity:
                                 fileChanges.append(currentEntity)
-                    #print(fileChanges)
+        saveFileButton.configure(state=NORMAL)
                     
     else:
-        print(currentEntity.name.decode()+": Value entered for "+property+" is invalid; The value of "+property+" was not changed")
+        print(currentEntity.name.decode() + ": The value of " + property + " was not updated; Value \"" + value + "\" is invalid.")
     refreshValues()
         #entityListRefresh() # Commented out due to not having a functional purpose until renaming entities is a function of this program
 

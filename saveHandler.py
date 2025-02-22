@@ -3,7 +3,7 @@ import fileHandler
 def saveLevelFile(layerList, fileChanges, file, fileOffset):
     writeFileHeader(layerList, file, fileOffset)
     for change in fileChanges:
-        writeEntityHeader(change, file, fileOffset)
+        writeEntity(change, file, fileOffset)
 
 def writeFileHeader(layerList, file, fileOffset):
     header = bytearray()
@@ -30,24 +30,25 @@ def writeFileHeader(layerList, file, fileOffset):
     file.seek(fileOffset)
     file.write(header)
 
-def writeEntityHeader(entity, file, fileOffset):
-    entityHeaderString = ""
-    entityHeaderString+=entity.type
-    entityHeaderString+=entity.unknown1
-    entityHeaderString+=entity.index
-    entityHeaderString+=entity.unknown2
-    entityHeaderString+=entity.posX
-    entityHeaderString+=entity.posY
-    entityHeaderString+=entity.posZ
-    entityHeaderString+=entity.stretchX
-    entityHeaderString+=entity.unknown4
-    entityHeaderString+=entity.unknown5
-    entityHeaderString+=entity.unknown6
-    entityHeaderString+=entity.unknown7
-    entityHeaderString+=entity.unknown8
-    entityHeaderString+=entity.unknown9
-    entityHeaderString+=entity.unknown10
-    entityHeaderString+=entity.headerEnd
-    entityHeader = bytearray.fromhex(entityHeaderString)
+def writeEntity(entity, file, fileOffset):
+    entityString = ""
+    entityString+=entity.type
+    entityString+=entity.unknown1
+    entityString+=entity.index
+    entityString+=entity.unknown2
+    entityString+=entity.posX
+    entityString+=entity.posY
+    entityString+=entity.posZ
+    entityString+=entity.unknown3
+    entityString+=entity.unknown4
+    entityString+=entity.unknown5
+    entityString+=entity.unknown6
+    entityString+=entity.unknown7
+    entityString+=entity.unknown8
+    entityString+=entity.unknown9
+    entityString+=entity.unknown10
+    entityString+=entity.headerEnd
+    entityString+=entity.typeProperties
+    entityHeader = bytearray.fromhex(entityString)
     file.seek(int(entity.offset, 16)+fileOffset)
     file.write(entityHeader)

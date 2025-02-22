@@ -5,6 +5,7 @@ import fileHandler
 import entityTypes
 import saveHandler
 from tkinter import *
+from tkinter import font
 from tkinter import filedialog
 
 # Creating root window
@@ -25,7 +26,7 @@ def clearValues():
     valuePosXEntry.delete(0, END)
     valuePosYEntry.delete(0, END)
     valuePosZEntry.delete(0, END)
-    valueStretchXEntry.delete(0, END)
+    valueUnknown3Entry.delete(0, END)
     valueUnknown4Entry.delete(0, END)
     valueUnknown5Entry.delete(0, END)
     valueUnknown6Entry.delete(0, END)
@@ -34,6 +35,8 @@ def clearValues():
     valueUnknown9Entry.delete(0, END)
     valueUnknown10Entry.delete(0, END)
     valueHeaderEndEntry.delete(0, END)
+    valueTypePropertiesHex.delete("1.0", END)
+    valueTypePropertiesText.delete("1.0", END)
 
 # Disables all values under the "value" column in the properties frame. Commented values do not support editing (currently or in general, will note)
 def disableValues():
@@ -45,7 +48,7 @@ def disableValues():
     valuePosXEntry.configure(state=DISABLED)
     valuePosYEntry.configure(state=DISABLED)
     valuePosZEntry.configure(state=DISABLED)
-    valueStretchXEntry.configure(state=DISABLED)
+    valueUnknown3Entry.configure(state=DISABLED)
     valueUnknown4Entry.configure(state=DISABLED)
     valueUnknown5Entry.configure(state=DISABLED)
     valueUnknown6Entry.configure(state=DISABLED)
@@ -54,6 +57,8 @@ def disableValues():
     valueUnknown9Entry.configure(state=DISABLED)
     valueUnknown10Entry.configure(state=DISABLED)
     valueHeaderEndEntry.configure(state=DISABLED) # Header End can not be changed
+    valueTypePropertiesHex.configure(state=DISABLED)
+    valueTypePropertiesText.configure(state=DISABLED)
 
 # Enables all values under the "value" column in the properties frame. Commented values do not support editing (currently or in general, will note)
 def enableValues():
@@ -65,7 +70,7 @@ def enableValues():
     valuePosXEntry.configure(state=NORMAL)
     valuePosYEntry.configure(state=NORMAL)
     valuePosZEntry.configure(state=NORMAL)
-    valueStretchXEntry.configure(state=NORMAL)
+    valueUnknown3Entry.configure(state=NORMAL)
     valueUnknown4Entry.configure(state=NORMAL)
     valueUnknown5Entry.configure(state=NORMAL)
     valueUnknown6Entry.configure(state=NORMAL)
@@ -74,6 +79,8 @@ def enableValues():
     valueUnknown9Entry.configure(state=NORMAL)
     valueUnknown10Entry.configure(state=NORMAL)
     valueHeaderEndEntry.configure(state=NORMAL) # Header End can not be changed
+    valueTypePropertiesHex.configure(state=NORMAL)
+    valueTypePropertiesText.configure(state=NORMAL)
 
 # Function for opening a .lvb file. Command opens the file, makes a list of the layers from the file for the user to modify, then closes the file. The file is reopened for saving during saveFile()
 def openFile():
@@ -184,7 +191,7 @@ class OutputRedirector(io.TextIOBase):
     def flush(self):
         pass
 
-systemMessageText = Text(systemMessageFrame, height=5, width=101)
+systemMessageText = Text(systemMessageFrame, height=5, width=108)
 systemMessageText.grid(row=0, column=1, sticky="EW")
 systemMessageText.bind("<Key>", lambda e: "break")
 sys.stdout = OutputRedirector(systemMessageText)
@@ -218,22 +225,24 @@ def refreshValues():
     global currentEntity
     clearValues()
     valueNameEntry.insert(0, currentEntity.name)
-    valueTypeEntry.insert(1, entityTypes.getTypeName(currentEntity.type))
-    valueUnknown1Entry.insert(2, currentEntity.unknown1)
-    valueIndexEntry.insert(3, currentEntity.index)
-    valueUnknown2Entry.insert(4, currentEntity.unknown2)
-    valuePosXEntry.insert(5, currentEntity.posX)
-    valuePosYEntry.insert(6, currentEntity.posY)
-    valuePosZEntry.insert(7, currentEntity.posZ)
-    valueStretchXEntry.insert(8, currentEntity.stretchX)
-    valueUnknown4Entry.insert(9, currentEntity.unknown4)
-    valueUnknown5Entry.insert(10, currentEntity.unknown5)
-    valueUnknown6Entry.insert(11, currentEntity.unknown6)
-    valueUnknown7Entry.insert(12, currentEntity.unknown7)
-    valueUnknown8Entry.insert(13, currentEntity.unknown8)
-    valueUnknown9Entry.insert(14, currentEntity.unknown9)
-    valueUnknown10Entry.insert(15, currentEntity.unknown10)
-    valueHeaderEndEntry.insert(16, currentEntity.headerEnd)
+    valueTypeEntry.insert(0, entityTypes.getTypeName(currentEntity.type))
+    valueUnknown1Entry.insert(0, currentEntity.unknown1)
+    valueIndexEntry.insert(0, currentEntity.index)
+    valueUnknown2Entry.insert(0, currentEntity.unknown2)
+    valuePosXEntry.insert(0, currentEntity.posX)
+    valuePosYEntry.insert(0, currentEntity.posY)
+    valuePosZEntry.insert(0, currentEntity.posZ)
+    valueUnknown3Entry.insert(0, currentEntity.unknown3)
+    valueUnknown4Entry.insert(0, currentEntity.unknown4)
+    valueUnknown5Entry.insert(0, currentEntity.unknown5)
+    valueUnknown6Entry.insert(0, currentEntity.unknown6)
+    valueUnknown7Entry.insert(0, currentEntity.unknown7)
+    valueUnknown8Entry.insert(0, currentEntity.unknown8)
+    valueUnknown9Entry.insert(0, currentEntity.unknown9)
+    valueUnknown10Entry.insert(0, currentEntity.unknown10)
+    valueHeaderEndEntry.insert(0, currentEntity.headerEnd)
+    valueTypePropertiesHex.insert("1.0", currentEntity.typeProperties)
+    valueTypePropertiesText.insert("1.0", bytearray.fromhex(currentEntity.typeProperties).decode('cp1252').replace('\x00', '.'))
 
 # Listbox that shows all entity layers
 entityListbox = Listbox(entityFrame, selectmode = SINGLE, width=40, height=21)
@@ -327,10 +336,10 @@ propertyPosZEntry.insert(7, "PositionZ")
 propertyPosZEntry.bind("<Key>", lambda e: "break")
 propertyPosZEntry.pack()
 
-propertyStretchXEntry = Entry(propertyLabelFrame, width=12)
-propertyStretchXEntry.insert(8, "StretchX")
-propertyStretchXEntry.bind("<Key>", lambda e: "break")
-propertyStretchXEntry.pack()
+propertyUnknown3Entry = Entry(propertyLabelFrame, width=12)
+propertyUnknown3Entry.insert(8, "Unknown3")
+propertyUnknown3Entry.bind("<Key>", lambda e: "break")
+propertyUnknown3Entry.pack()
 
 propertyUnknown4Entry = Entry(propertyLabelFrame, width=12)
 propertyUnknown4Entry.insert(9, "Unknown4")
@@ -372,46 +381,35 @@ propertyHeaderEndEntry.insert(16, "HeaderEnd")
 propertyHeaderEndEntry.bind("<Key>", lambda e: "break")
 propertyHeaderEndEntry.pack()
 
-# Frame that holds both property and value fields for properties specific to types
-## To be implemented
-typePropertyFrame = LabelFrame(root, text="Type Properties", padx=5, pady=5)
-typePropertyFrame.grid(row=2, column=3, sticky="W")
-
-typePropertyText = Text(typePropertyFrame, height=21, width=24)
-typePropertyText.pack()
-typePropertyText.insert(END, "To be implemented")
-typePropertyText.configure(state=DISABLED)
-
 # Writes any values changed back to the currently-selected entity object
 def writeValue(property, value):
     global currentEntity
-    # Checks Entry widget for a valid hex entry. If property = "name", a different check and value replacement method would have to be used
-    if property != "name" and len(value) == 8:
-        try:
-            int(value, 16)
-        except ValueError:
-            refreshValues()
-            print(currentEntity.name.decode() + ": The value of " + property + " was not updated; Value \"" + value + "\" is invalid.")
-        for key in currentEntity.__dict__.keys():
+    for key in currentEntity.__dict__.keys():
             if key == property:
-                if currentEntity.__dict__.get(key) != value:
-                    print(currentEntity.name.decode() + ": Value of " + property + " updated from \"" + currentEntity.__dict__.get(key) + "\" to \"" + value + "\".")
-                    currentEntity.__dict__.update({key : value})
-                    if len(fileChanges) == 0:
-                        fileChanges.append(currentEntity)
-                    else:
-                        for entity in fileChanges:
-                            if entity != currentEntity:
-                                fileChanges.append(currentEntity)
-        saveFileButton.configure(state=NORMAL)
-                    
-    else:
-        print(currentEntity.name.decode() + ": The value of " + property + " was not updated; Value \"" + value + "\" is invalid.")
+                if len(value) == len(currentEntity.__dict__.get(key)):
+                    try:
+                        int(value, 16)
+                    except ValueError:
+                        refreshValues()
+                        print(currentEntity.name.decode('cp1252') + ": The value of " + property + " was not updated; Value \"" + value + "\" is invalid.")
+                    if currentEntity.__dict__.get(key) != value:
+                        print(currentEntity.name.decode('cp1252') + ": Value of " + property + " updated from \"" + currentEntity.__dict__.get(key) + "\" to \"" + value + "\".")
+                        currentEntity.__dict__.update({key : value})
+                        if len(fileChanges) == 0:
+                            fileChanges.append(currentEntity)
+                        else:
+                            for entity in fileChanges:
+                                if entity != currentEntity:
+                                    fileChanges.append(currentEntity)
+                        saveFileButton.configure(state=NORMAL)
+                else:
+                    print(currentEntity.name.decode('cp1252') + ": The value of " + property + " was not updated; Value \"" + value + "\" is invalid.")       
     refreshValues()
+
         #entityListRefresh() # Commented out due to not having a functional purpose until renaming entities is a function of this program
 
 # List of Entries for viewing and modifying entity properties. This is also messy like the property Entries but maybe I'll fix it when Nova yells at me later about it. (Hi Nova :3)
-# Also the Entries with the events commented out are not editable. Name and Index may be editable one day, but Type and Header End will not be.
+# Also the Entries with the events commented out are not editable, but should be one day.
 valueLabel = Label(propertyFrame, text="Value", justify=CENTER)
 valueLabel.grid(row=0, column=1)
 valueFrame = LabelFrame(propertyFrame)
@@ -424,8 +422,6 @@ valueNameEntry.bind("<Key>", lambda e: "break")
 valueNameEntry.pack()
 
 valueTypeEntry = Entry(valueFrame, width=30, state=DISABLED, bg='#f0f0f0')
-#valueTypeEntry.bind("<FocusOut>", lambda e: writeValue("type", valueTypeEntry.get()))
-#valueTypeEntry.bind("<Return>", lambda e: writeValue("type", valueTypeEntry.get()))
 valueTypeEntry.bind("<Key>", lambda e: "break")
 valueTypeEntry.pack()
 
@@ -460,10 +456,10 @@ valuePosZEntry.bind("<FocusOut>", lambda e: writeValue("posZ", valuePosZEntry.ge
 valuePosZEntry.bind("<Return>", lambda e: writeValue("posZ", valuePosZEntry.get()))
 valuePosZEntry.pack()
 
-valueStretchXEntry = Entry(valueFrame, width=30, state=DISABLED)
-valueStretchXEntry.bind("<FocusOut>", lambda e: writeValue("stretchX", valueStretchXEntry.get()))
-valueStretchXEntry.bind("<Return>", lambda e: writeValue("stretchX", valueStretchXEntry.get()))
-valueStretchXEntry.pack()
+valueUnknown3Entry = Entry(valueFrame, width=30, state=DISABLED)
+valueUnknown3Entry.bind("<FocusOut>", lambda e: writeValue("unknown3", valueUnknown3Entry.get()))
+valueUnknown3Entry.bind("<Return>", lambda e: writeValue("unknown3", valueUnknown3Entry.get()))
+valueUnknown3Entry.pack()
 
 valueUnknown4Entry = Entry(valueFrame, width=30, state=DISABLED)
 valueUnknown4Entry.bind("<FocusOut>", lambda e: writeValue("unknown4", valueUnknown4Entry.get()))
@@ -501,10 +497,29 @@ valueUnknown10Entry.bind("<Return>", lambda e: writeValue("unknown10", valueUnkn
 valueUnknown10Entry.pack()
 
 valueHeaderEndEntry = Entry(valueFrame, width=30, state=DISABLED, bg='#f0f0f0')
-#valueHeaderEndEntry.bind("<FocusOut>", lambda e: writeValue("headerEnd", valueHeaderEndEntry.get()))
-#valueHeaderEndEntry.bind("<Return>", lambda e: writeValue("headerEnd", valueHeaderEndEntry.get()))
 valueHeaderEndEntry.bind("<Key>", lambda e: "break")
 valueHeaderEndEntry.pack()
+
+# Monospaced font that is used for the type properties windows
+try:
+    monoFont = font.Font(family="Courier New", size=12)
+except TclError:
+    monoFont = font.Font(family="Monospace", size=12)
+
+# Frame that holds both property and value fields for properties specific to types
+typePropertiesFrame = LabelFrame(root, text="Type Properties", padx=5, pady=2)
+typePropertiesFrame.grid(row=2, column=3, sticky="W")
+
+# Type properties are shown using two text boxes: One in hex and one encoded into text. This allows the user to edit certain type properties either by changing hex values or writing in names in text depending on the situation.
+valueTypePropertiesHex = Text(typePropertiesFrame, height=19, width=16, state=DISABLED, font=monoFont)
+valueTypePropertiesHex.grid(row=0, column=0)
+valueTypePropertiesHex.bind("<FocusOut>", lambda e: writeValue("typeProperties", valueTypePropertiesHex.get("1.0", END).rstrip('\n'))) # Text widgets automatically put a new line char '\n' at the end of the new lines, so each of these are stripped of their new line chars before being checked during writeValue().
+valueTypePropertiesHex.bind("<Return>", lambda e: writeValue("typeProperties", valueTypePropertiesHex.get("1.0", END).rstrip('\n'))) 
+
+valueTypePropertiesText = Text(typePropertiesFrame, height=19, width=8, state=DISABLED, font=monoFont)
+valueTypePropertiesText.grid(row=0, column=1)
+valueTypePropertiesText.bind("<FocusOut>", lambda e: writeValue("typeProperties", (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('.', '\x00').encode('cp1252').hex())))
+valueTypePropertiesText.bind("<Return>", lambda e: writeValue("typeProperties", (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('.', '\x00').encode('cp1252').hex())))
 
 # Main loop of program
 root.mainloop()

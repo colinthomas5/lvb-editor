@@ -245,7 +245,7 @@ def refreshValues():
     valueTypePropertiesText.insert("1.0", bytearray.fromhex(currentEntity.typeProperties).decode('cp1252').replace('\x00', '.'))
 
 # Listbox that shows all entity layers
-entityListbox = Listbox(entityFrame, selectmode = SINGLE, width=40, height=21)
+entityListbox = Listbox(entityFrame, selectmode = SINGLE, width=40, height=20)
 entityListbox.grid(row=0, column=1, sticky="W")
 entityListbox.bind("<<ListboxSelect>>", onEntitySelect)
 
@@ -281,12 +281,12 @@ def entityListRefresh():
     currentEntity = tempEntity
 
 # Listbox that shows all entity layers
-layerListbox = Listbox(layerFrame, selectmode = SINGLE, width=10, height=21)
+layerListbox = Listbox(layerFrame, selectmode = SINGLE, width=10, height=20)
 layerListbox.grid(row=0, column=0, sticky="W")
 layerListbox.bind("<<ListboxSelect>>", onLayerSelect)
 
 # Frame that holds both property and value fields for properties that all entities have, regardless of type
-propertyFrame = LabelFrame(root, text="Properties", padx=5, pady=1)
+propertyFrame = LabelFrame(root, text="Properties", padx=5, pady=2)
 propertyFrame.grid(row=2, column=2, sticky="W")
 
 # List of properties that each entity has despite type
@@ -379,7 +379,7 @@ propertyUnknown10Entry.pack()
 propertyHeaderEndEntry = Entry(propertyLabelFrame, width=12)
 propertyHeaderEndEntry.insert(16, "HeaderEnd")
 propertyHeaderEndEntry.bind("<Key>", lambda e: "break")
-propertyHeaderEndEntry.pack()
+#propertyHeaderEndEntry.pack() # Unable to be edited so not presented to user
 
 # Writes any values changed back to the currently-selected entity object
 def writeValue(property, value):
@@ -391,7 +391,8 @@ def writeValue(property, value):
                         int(value, 16)
                     except ValueError:
                         refreshValues()
-                        print(currentEntity.name.decode('cp1252') + ": The value of " + property + " was not updated; Value \"" + value + "\" is invalid.")
+                        print(currentEntity.name.decode('cp1252') + ": The value of " + property + " was not updated; Value of \"" + value + "\" is invalid.")
+                        return
                     if currentEntity.__dict__.get(key) != value:
                         print(currentEntity.name.decode('cp1252') + ": Value of " + property + " updated from \"" + currentEntity.__dict__.get(key) + "\" to \"" + value + "\".")
                         currentEntity.__dict__.update({key : value})
@@ -403,7 +404,7 @@ def writeValue(property, value):
                                     fileChanges.append(currentEntity)
                         saveFileButton.configure(state=NORMAL)
                 else:
-                    print(currentEntity.name.decode('cp1252') + ": The value of " + property + " was not updated; Value \"" + value + "\" is invalid.")       
+                    print(currentEntity.name.decode('cp1252') + ": The value of " + property + " was not updated; Length of \"" + value + "\" is invalid.")       
     refreshValues()
 
         #entityListRefresh() # Commented out due to not having a functional purpose until renaming entities is a function of this program
@@ -498,28 +499,48 @@ valueUnknown10Entry.pack()
 
 valueHeaderEndEntry = Entry(valueFrame, width=30, state=DISABLED, bg='#f0f0f0')
 valueHeaderEndEntry.bind("<Key>", lambda e: "break")
-valueHeaderEndEntry.pack()
+#valueHeaderEndEntry.pack() # Unable to be edited so not presented to user
 
 # Monospaced font that is used for the type properties windows
 try:
     monoFont = font.Font(family="Courier New", size=12)
 except TclError:
     monoFont = font.Font(family="Monospace", size=12)
+    print("Courier New font not installed; Value in \"Type Properties\" window may not be aligned properly.")
 
 # Frame that holds both property and value fields for properties specific to types
-typePropertiesFrame = LabelFrame(root, text="Type Properties", padx=5, pady=2)
+typePropertiesFrame = LabelFrame(root, text="Type Properties", padx=5, pady=3)
 typePropertiesFrame.grid(row=2, column=3, sticky="W")
 
 # Type properties are shown using two text boxes: One in hex and one encoded into text. This allows the user to edit certain type properties either by changing hex values or writing in names in text depending on the situation.
-valueTypePropertiesHex = Text(typePropertiesFrame, height=19, width=16, state=DISABLED, font=monoFont)
-valueTypePropertiesHex.grid(row=0, column=0)
+valueTypePropertiesHex = Text(typePropertiesFrame, height=18, width=16, state=DISABLED, font=monoFont)
+valueTypePropertiesHex.grid(row=0, column=1)
 valueTypePropertiesHex.bind("<FocusOut>", lambda e: writeValue("typeProperties", valueTypePropertiesHex.get("1.0", END).rstrip('\n'))) # Text widgets automatically put a new line char '\n' at the end of the new lines, so each of these are stripped of their new line chars before being checked during writeValue().
 valueTypePropertiesHex.bind("<Return>", lambda e: writeValue("typeProperties", valueTypePropertiesHex.get("1.0", END).rstrip('\n'))) 
 
-valueTypePropertiesText = Text(typePropertiesFrame, height=19, width=8, state=DISABLED, font=monoFont)
-valueTypePropertiesText.grid(row=0, column=1)
+valueTypePropertiesText = Text(typePropertiesFrame, height=18, width=8, state=DISABLED, font=monoFont)
+valueTypePropertiesText.grid(row=0, column=2)
 valueTypePropertiesText.bind("<FocusOut>", lambda e: writeValue("typeProperties", (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('.', '\x00').encode('cp1252').hex())))
 valueTypePropertiesText.bind("<Return>", lambda e: writeValue("typeProperties", (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('.', '\x00').encode('cp1252').hex())))
+
+# Functions to scroll both the hex and text Text Widgets at the same time. First functions handles the scroll bar, second function handles the mouse wheel
+def typePropertiesScrollTogetherBar(*args):
+    valueTypePropertiesHex.yview(*args)
+    valueTypePropertiesText.yview(*args)
+
+def typePropertiesScrollTogetherWheel(event):
+    valueTypePropertiesHex.yview_scroll(int(-1*(event.delta/120)), "units")
+    valueTypePropertiesText.yview_scroll(int(-1*(event.delta/120)), "units")
+    return "break"
+
+typePropertiesScrollbar = Scrollbar(typePropertiesFrame, orient="vertical")
+typePropertiesScrollbar.grid(row=0, column=0, sticky="NS")
+typePropertiesScrollbar.configure(command=typePropertiesScrollTogetherBar)
+valueTypePropertiesHex.configure(yscrollcommand=typePropertiesScrollbar.set)
+valueTypePropertiesText.configure(yscrollcommand=typePropertiesScrollbar.set)
+
+valueTypePropertiesHex.bind("<MouseWheel>", typePropertiesScrollTogetherWheel)
+valueTypePropertiesText.bind("<MouseWheel>", typePropertiesScrollTogetherWheel)
 
 # Main loop of program
 root.mainloop()

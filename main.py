@@ -12,6 +12,17 @@ from tkinter import filedialog
 root = Tk()
 root.title("LVB-Edit: No File")
 root.resizable(False, False)
+
+# Determines absolute path to a resource; Functions during dev and after PyInstaller build
+def resourcePath(relativePath):
+        try:
+            basePath = sys._MEIPASS
+        except Exception:
+            basePath = os.path.abspath(".")
+        return os.path.join(basePath, relativePath)
+
+root.iconbitmap(resourcePath(r'snail.ico'))
+
 layerList = []
 global file
 file = None

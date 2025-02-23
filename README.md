@@ -1,8 +1,10 @@
 # lvb-editor
 A basic editor for .lvb files from games that use the WayForward Engine
+![image](https://github.com/user-attachments/assets/f0eb850b-40b9-430b-a4f3-57084d080a5c)
+
 
 ## Project Information
-This is a basic level editor for games made by WayForward that use the .lvb level format, which is stored within the game's .pak files. This project is made specifically for compatability with .lvb and .pak files from Adventure Time: Secret of the Nameless Kingdom, however it may function with over WayForward games that use .lvb files stored in .pak files.
+This tool can open, view, modify, and save the contents of the .lvb files used by WayForward Technologies. This project is made specifically for compatability with .lvb and .pak files from the PC version of Adventure Time: Secret of the Nameless Kingdom, however it may function with over WayForward games that use .lvb files stored in .pak files.
 
 ## Development Log
 2/21/25 - Support for editing type properties is now implemented. Type properties are shown as hex values and as a decoded string, with both being editable. Editing type propertie is very dangerous right now since nothing is properly labeled, so more research will be required for each type to figure out what their properties are. The end goal is to have type properties look similar to the universal properties, with each value being labeled and in a row for the user.

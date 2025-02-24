@@ -277,6 +277,7 @@ def onLayerSelect(self):
             global selectedLayer
             selectedLayer = layerList[currentLayer]
             for Entity in selectedLayer.entityList:
+                print(Entity.name)
                 entityListbox.insert(END, Entity.name)
 
 # Refreshes the entity list. Used when updating any values in an entity. Makes sure names dynamically update in entity list

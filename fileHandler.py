@@ -28,29 +28,25 @@ def openLevelFile(levelFile, fileExtension):
 
     # Header of .lvb file is separated
     global header
-    header = file.read(128)
+    file.seek(8, 1)
+    headerSize = int.from_bytes(file.read(4), "little")
+    file.seek(fileOffset)
+    header = file.read(headerSize)
     
-    # Every .lvb file has four layers where entities may exist. They also have a fifth layer, which is dedicated to storing the names of all of the entities in the .lvb file. These lists anticipate that there will only ever be four layers (plus the name layer).
-    entityList1 = []
-    entityList2 = []
-    entityList3 = []
-    entityList4 = []
-    entityList5 = ["name"]
-
-    # The offset at which each layer starts from the start of the .lvb file. Every layer except the name layer will require knowing the offset of the next layer to properly format its type-specific data.
-    layer1Offset = int.from_bytes(header[8:12], "little")
-    layer2Offset = int.from_bytes(header[24:28], "little")
-    layer3Offset = int.from_bytes(header[40:44], "little")
-    layer4Offset = int.from_bytes(header[56:60], "little")
-    layer5Offset = int.from_bytes(header[72:76], "little")
-
-    # Similar to the lists above, the creation of these four object layers are made under the assumption that there will always be four entity layers (and one name layer).
-    layer1 = Layer(layer1Offset, layer2Offset, int.from_bytes(header[4:8], "little"), entityList1)
-    layer2 = Layer(layer2Offset, layer3Offset, int.from_bytes(header[16:20], "little"), entityList2)
-    layer3 = Layer(layer3Offset, layer4Offset, int.from_bytes(header[32:36], "little"), entityList3)
-    layer4 = Layer(layer4Offset, layer4Offset, int.from_bytes(header[48:52], "little"), entityList4)
-    layer5 = Layer(layer5Offset, None, int.from_bytes(header[64:68], "little"), entityList5)
-    layerList = [layer1, layer2, layer3, layer4, layer5]
+    layerNumberOfEntities = int.from_bytes(header[4:8], "little")
+    layerOffset = int.from_bytes(header[8:12], "little")
+    headerSeek = 16
+    layerList = []
+    while headerSeek < headerSize:
+        nextLayerOffset = int.from_bytes(header[headerSeek+8: headerSeek+12], "little")
+        if nextLayerOffset == 0:
+            nextLayerOffset = None
+        if layerOffset != None:
+            layer = Layer(layerOffset, nextLayerOffset, layerNumberOfEntities)
+            layerNumberOfEntities = int.from_bytes(header[headerSeek: headerSeek+4], "little")
+            layerOffset = nextLayerOffset
+            layerList.append(layer)
+        headerSeek+=16
 
     return layerList, fileOffset
 
@@ -101,12 +97,13 @@ class NameEntity:
 
 # Entities are sorted into Layers within .lvb files. Layers start with a table that lists all hex offsets of entities within that layer, followed by the entities. When parsing a layer, the layer object fills a list with all of the entities in that layer while populating all of the information about the entities.
 class Layer:
-    def __init__(self, offset, nextOffset, numberOfEntities, entityList):
+    def __init__(self, offset, nextOffset, numberOfEntities):
         self.offset = offset
         self.numberOfEntities = numberOfEntities
+        entityList = []
         self.entityList = entityList
         entityNumber=0
-        if len(entityList) == 0:
+        if nextOffset != None:
             self.type = "entity"
             while(entityNumber < numberOfEntities):
                 entityLocation = offset + (entityNumber*8) + fileOffset

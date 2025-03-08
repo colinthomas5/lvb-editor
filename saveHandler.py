@@ -34,7 +34,7 @@ def writeEntity(entity, file, fileOffset):
     entityString = ""
     entityString+=entity.type
     entityString+=entity.unknown1
-    entityString+=entity.index
+    entityString+=(entity.index).to_bytes(4, "little").hex()
     entityString+=entity.unknown2
     entityString+=entity.posX
     entityString+=entity.posY

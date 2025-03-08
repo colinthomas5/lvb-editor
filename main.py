@@ -276,16 +276,15 @@ def refreshValues():
     valueTypePropertiesHex.insert("1.0", currentEntity.typeProperties)
     valueTypePropertiesText.insert("1.0", bytearray.fromhex(currentEntity.typeProperties).decode('cp1252').replace('\x00', '.'))
 
-
 # Listbox that shows all entity layers
 entityListbox = Listbox(entityFrame, selectmode = SINGLE, width=40, height=20)
-entityListbox.grid(row=1, column=1, columnspan=2, sticky="W")
+entityListbox.grid(row=1, column=0, columnspan=2, sticky="W")
 entityListbox.bind("<<ListboxSelect>>", lambda e: onEntitySelect())
 entityListbox.bind("<<Activate>>", lambda e: onEntitySelect())
 
 # Scrollbar for above listbox
 entityScrollbar = Scrollbar(entityFrame, orient="vertical", command=entityListbox.yview)
-entityScrollbar.grid(row=1, column=0, sticky="NS")
+entityScrollbar.grid(row=1, column=2, sticky="NS")
 entityListbox.configure(yscrollcommand=entityScrollbar.set)
 
 # Searches current values in the entity list to jump to the first entity that matches what is written in entitySearchEntry
@@ -311,7 +310,7 @@ def entitySearch(searchTerm):
     entitySearchEntry.configure(background = "red")
 
 entitySearchLabel = Label(entityFrame, text="Search:")
-entitySearchLabel.grid(row=0, column=1, sticky="E")
+entitySearchLabel.grid(row=0, column=0, sticky="E")
 
 # Entry widget that allows for searching through the layer based on entity name. Pressing enter once searches the typed term, and pressing enter more times while still on the same entity will go to the next applicable entity for the typed term
 global entitySearchLastEntry
@@ -319,7 +318,7 @@ entitySearchLastEntry = ""
 global entitySearchLastIndex
 entitySearchLastIndex = 0
 entitySearchEntry = Entry(entityFrame, width=31, state=DISABLED)
-entitySearchEntry.grid(row=0, column=2, sticky="E")
+entitySearchEntry.grid(row=0, column=1, sticky="E")
 entitySearchEntry.bind("<Return>", lambda e: entitySearch(entitySearchEntry.get()))
 entitySearchEntry.bind("<FocusOut>", lambda e: entitySearchEntry.configure(background="white"))
 entitySearchEntry.bind("<Key>", lambda e: entitySearchEntry.configure(background="white"))
@@ -633,7 +632,7 @@ typePropertiesFrame.grid(row=2, column=3, sticky="W")
 
 # Type properties are shown using two text boxes: One in hex and one encoded into text. This allows the user to edit certain type properties either by changing hex values or writing in names in text depending on the situation.
 valueTypePropertiesHex = Text(typePropertiesFrame, height=18, width=16, state=DISABLED, font=monoFont)
-valueTypePropertiesHex.grid(row=0, column=1)
+valueTypePropertiesHex.grid(row=0, column=0)
 valueTypePropertiesHex.bind("<FocusOut>", lambda e: valueTypePropertiesHex.configure(background="white"))
 valueTypePropertiesHex.bind("<FocusOut>", lambda e: writeValue("typeProperties", valueTypePropertiesHex, valueTypePropertiesHex.get("1.0", END).rstrip('\n')), add="+") # Text widgets automatically put a new line char '\n' at the end of the new lines, so each of these are stripped of their new line chars before being checked during writeValue().
 valueTypePropertiesHex.bind("<Return>", lambda e: writeValue("typeProperties", valueTypePropertiesHex, valueTypePropertiesHex.get("1.0", END).rstrip('\n'))) 
@@ -641,7 +640,7 @@ valueTypePropertiesHex.bind("<Key>", lambda e: valueTypePropertiesHex.configure(
 valueTypePropertiesHex.bind("<Button-1>", lambda e: valueTypePropertiesHex.configure(background="white"))
 
 valueTypePropertiesText = Text(typePropertiesFrame, height=18, width=8, state=DISABLED, font=monoFont)
-valueTypePropertiesText.grid(row=0, column=2)
+valueTypePropertiesText.grid(row=0, column=1)
 valueTypePropertiesText.bind("<FocusOut>", lambda e: valueTypePropertiesHex.configure(background="white"))
 valueTypePropertiesText.bind("<FocusOut>", lambda e: writeValue("typeProperties", valueTypePropertiesText, (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('.', '\x00').encode('cp1252').hex())), add="+")
 valueTypePropertiesText.bind("<Return>", lambda e: writeValue("typeProperties", valueTypePropertiesText, (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('.', '\x00').encode('cp1252').hex())))
@@ -659,7 +658,7 @@ def typePropertiesScrollTogetherWheel(event):
     return "break"
 
 typePropertiesScrollbar = Scrollbar(typePropertiesFrame, orient="vertical")
-typePropertiesScrollbar.grid(row=0, column=0, sticky="NS")
+typePropertiesScrollbar.grid(row=0, column=2, sticky="NS")
 typePropertiesScrollbar.configure(command=typePropertiesScrollTogetherBar)
 valueTypePropertiesHex.configure(yscrollcommand=typePropertiesScrollbar.set)
 valueTypePropertiesText.configure(yscrollcommand=typePropertiesScrollbar.set)

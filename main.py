@@ -27,7 +27,7 @@ layerList = []
 global file
 file = None
 
-# Clears all values under the "value" column in the properties frame. Called when changing entities, layers, and files.
+# Clears all values under the "value" column in the properties frame and everything in the type properties frame. This also resets background colors to white. Called when changing entities, layers, and files.
 def clearValues():
     valueNameEntry.delete(0, END)
     valueTypeEntry.delete(0, END)
@@ -48,6 +48,24 @@ def clearValues():
     valueHeaderEndEntry.delete(0, END)
     valueTypePropertiesHex.delete("1.0", END)
     valueTypePropertiesText.delete("1.0", END)
+
+    #valueNameEntry.configure(background="white")
+    valueUnknown1Entry.configure(background="white")
+    #valueIndexEntry.configure(background="white")
+    valueUnknown2Entry.configure(background="white")
+    valuePosXEntry.configure(background="white")
+    valuePosYEntry.configure(background="white")
+    valuePosZEntry.configure(background="white")
+    valueUnknown3Entry.configure(background="white")
+    valueUnknown4Entry.configure(background="white")
+    valueUnknown5Entry.configure(background="white")
+    valueUnknown6Entry.configure(background="white")
+    valueUnknown7Entry.configure(background="white")
+    valueUnknown8Entry.configure(background="white")
+    valueUnknown9Entry.configure(background="white")
+    valueUnknown10Entry.configure(background="white")
+    valueTypePropertiesHex.configure(background="white")
+    valueTypePropertiesText.configure(background="white")
 
 # Disables all values under the "value" column in the properties frame. Commented values do not support editing (currently or in general, will note)
 def disableValues():
@@ -133,15 +151,17 @@ def openFile():
     fileChanges = []
     file.close()
     closeFileButton.configure(state=NORMAL)
+    entitySearchEntry.configure(state=NORMAL)
     print(fileName + ": File opened.")
 
 # Function for closing the currently-open .lvb file. Now that the file is closed during openFile() and reopened during saveFile(), this only has a visual purpose
 def closeFile():
     layerListbox.event_generate("<<ListboxUnselect>>")
     entityListbox.event_generate("<<ListboxUnselect>>")
-    #file.close() # File now closed during openFile()
+    #file.close() # File now closed during openFile() and reopened during saveFile() for saving
     layerListbox.delete(0, END)
     entityListbox.delete(0, END)
+    entitySearchEntry.delete(0, END)
     clearValues()
     disableValues()
     global currentEntity
@@ -150,6 +170,7 @@ def closeFile():
     selectedLayer = None
     closeFileButton.configure(state=DISABLED)
     saveFileButton.configure(state=DISABLED)
+    entitySearchEntry.configure(state=DISABLED)
     root.title("LVB-Edit: No File")
     global file
     file = None
@@ -221,7 +242,7 @@ entityFrame = LabelFrame(root, text="Entities", padx=5, pady=5)
 entityFrame.grid(row=2, column=1, sticky="W")
 
 # Causes the values Entry widgets to populate with information about each Entity. This is long and messy.
-def onEntitySelect(self):
+def onEntitySelect():
     global selectedLayer
     if entityListbox.curselection():
         enableValues()
@@ -255,15 +276,53 @@ def refreshValues():
     valueTypePropertiesHex.insert("1.0", currentEntity.typeProperties)
     valueTypePropertiesText.insert("1.0", bytearray.fromhex(currentEntity.typeProperties).decode('cp1252').replace('\x00', '.'))
 
+
 # Listbox that shows all entity layers
 entityListbox = Listbox(entityFrame, selectmode = SINGLE, width=40, height=20)
-entityListbox.grid(row=0, column=1, sticky="W")
-entityListbox.bind("<<ListboxSelect>>", onEntitySelect)
+entityListbox.grid(row=1, column=1, columnspan=2, sticky="W")
+entityListbox.bind("<<ListboxSelect>>", lambda e: onEntitySelect())
+entityListbox.bind("<<Activate>>", lambda e: onEntitySelect())
 
 # Scrollbar for above listbox
 entityScrollbar = Scrollbar(entityFrame, orient="vertical", command=entityListbox.yview)
-entityScrollbar.grid(row=0, column=0, sticky="NS")
+entityScrollbar.grid(row=1, column=0, sticky="NS")
 entityListbox.configure(yscrollcommand=entityScrollbar.set)
+
+# Searches current values in the entity list to jump to the first entity that matches what is written in entitySearchEntry
+def entitySearch(searchTerm):
+    global entitySearchLastEntry
+    global entitySearchLastIndex
+    if entitySearchLastEntry == searchTerm and len(entityListbox.curselection()) != 0 and entitySearchLastIndex == entityListbox.curselection()[0]:
+        entityIndex = entitySearchLastIndex + 1
+    else:
+        entityIndex = 0
+    entries = entityListbox.get(entityIndex, END)
+    for entity in entries:
+        if searchTerm.lower() in entity.decode().lower():
+            entityListbox.selection_clear(0, END)
+            entityListbox.selection_set(entityIndex)
+            entityListbox.see(entityIndex)
+            entityListbox.activate(entityIndex)
+            onEntitySelect()
+            entitySearchLastEntry = searchTerm
+            entitySearchLastIndex = entityIndex
+            return
+        entityIndex+=1
+    entitySearchEntry.configure(background = "red")
+
+entitySearchLabel = Label(entityFrame, text="Search:")
+entitySearchLabel.grid(row=0, column=1, sticky="E")
+
+# Entry widget that allows for searching through the layer based on entity name. Pressing enter once searches the typed term, and pressing enter more times while still on the same entity will go to the next applicable entity for the typed term
+global entitySearchLastEntry
+entitySearchLastEntry = ""
+global entitySearchLastIndex
+entitySearchLastIndex = 0
+entitySearchEntry = Entry(entityFrame, width=31, state=DISABLED)
+entitySearchEntry.grid(row=0, column=2, sticky="E")
+entitySearchEntry.bind("<Return>", lambda e: entitySearch(entitySearchEntry.get()))
+entitySearchEntry.bind("<FocusOut>", lambda e: entitySearchEntry.configure(background="white"))
+entitySearchEntry.bind("<Key>", lambda e: entitySearchEntry.configure(background="white"))
 
 # Causes the Entity listbox to populate with entities from a given layer when a layer is selected in the Layer listbox
 def onLayerSelect(self):
@@ -276,8 +335,8 @@ def onLayerSelect(self):
             currentLayer = int(selection)
             global selectedLayer
             selectedLayer = layerList[currentLayer]
-            for Entity in selectedLayer.entityList:
-                entityListbox.insert(END, Entity.name)
+            for entity in selectedLayer.entityList:
+                entityListbox.insert(END, entity.name)
 
 # Refreshes the entity list. Used when updating any values in an entity. Makes sure names dynamically update in entity list
 ## Currently not referenced, as the main purpose would be to dynamically update names in layers and renaming entities is not currently supported.
@@ -393,7 +452,7 @@ propertyHeaderEndEntry.bind("<Key>", lambda e: "break")
 #propertyHeaderEndEntry.pack() # Unable to be edited so not presented to user
 
 # Writes any values changed back to the currently-selected entity object
-def writeValue(property, value):
+def writeValue(property, entryBox, value):
     global currentEntity
     for key in currentEntity.__dict__.keys():
             if key == property:
@@ -402,6 +461,7 @@ def writeValue(property, value):
                         int(value, 16)
                     except ValueError:
                         refreshValues()
+                        entryBox.configure(background = "red")
                         print(currentEntity.name.decode('cp1252') + ": The value of " + property + " was not updated; Value of \"" + value + "\" is invalid.")
                         return
                     if currentEntity.__dict__.get(key) != value:
@@ -415,7 +475,10 @@ def writeValue(property, value):
                                     fileChanges.append(currentEntity)
                         saveFileButton.configure(state=NORMAL)
                 else:
-                    print(currentEntity.name.decode('cp1252') + ": The value of " + property + " was not updated; Length of \"" + value + "\" is invalid.")       
+                    refreshValues()
+                    entryBox.configure(background = "red")
+                    print(currentEntity.name.decode('cp1252') + ": The value of " + property + " was not updated; Length of \"" + value + "\" is invalid.")
+                    return       
     refreshValues()
 
         #entityListRefresh() # Commented out due to not having a functional purpose until renaming entities is a function of this program
@@ -428,8 +491,11 @@ valueFrame = LabelFrame(propertyFrame)
 valueFrame.grid(row=1, column=1)
 
 valueNameEntry = Entry(valueFrame, width=30, state=DISABLED, bg='#f0f0f0')
-#valueNameEntry.bind("<FocusOut>", lambda e: writeValue("name", bytes(valueNameEntry.get(), "utf-8")))
-#valueNameEntry.bind("<Return>", lambda e: writeValue("name", bytes(valueNameEntry.get(), "utf-8")))
+#valueNameEntry.bind("<FocusOut>", lambda e: valueNameEntry.configure(background="white"))
+#valueNameEntry.bind("<FocusOut>", lambda e: writeValue("name", valueNameEntry, bytes(valueNameEntry.get(), "utf-8")), add="+")
+#valueNameEntry.bind("<Return>", lambda e: writeValue("name", valueNameEntry, bytes(valueNameEntry.get(), "utf-8")))
+#valueNameEntry.bind("<Key>", lambda e: valueNameEntry.configure(background="white"))
+#valueNameEntry.bind("<Button-1>", lambda e: valueNameEntry.configure(background="white"))
 valueNameEntry.bind("<Key>", lambda e: "break")
 valueNameEntry.pack()
 
@@ -438,74 +504,116 @@ valueTypeEntry.bind("<Key>", lambda e: "break")
 valueTypeEntry.pack()
 
 valueUnknown1Entry = Entry(valueFrame, width=30, state=DISABLED)
-valueUnknown1Entry.bind("<FocusOut>", lambda e: writeValue("unknown1", valueUnknown1Entry.get()))
-valueUnknown1Entry.bind("<Return>", lambda e: writeValue("unknown1", valueUnknown1Entry.get()))
+valueUnknown1Entry.bind("<FocusOut>", lambda e: valueUnknown1Entry.configure(background="white"))
+valueUnknown1Entry.bind("<FocusOut>", lambda e: writeValue("unknown1", valueUnknown1Entry, valueUnknown1Entry.get()), add="+")
+valueUnknown1Entry.bind("<Return>", lambda e: writeValue("unknown1", valueUnknown1Entry, valueUnknown1Entry.get()))
+valueUnknown1Entry.bind("<Key>", lambda e: valueUnknown1Entry.configure(background="white"))
+valueUnknown1Entry.bind("<Button-1>", lambda e: valueUnknown1Entry.configure(background="white"))
 valueUnknown1Entry.pack()
 
 valueIndexEntry = Entry(valueFrame, width=30, state=DISABLED, bg='#f0f0f0')
-#valueIndexEntry.bind("<FocusOut>", lambda e: writeValue("index", valueIndexEntry.get()))
-#valueIndexEntry.bind("<Return>", lambda e: writeValue("index", valueIndexEntry.get()))
+#valueIndexEntry.bind("<FocusOut>", lambda e: valueIndexEntry.configure(background="white"))
+#valueIndexEntry.bind("<FocusOut>", lambda e: writeValue("index", valueIndexEntry, valueIndexEntry.get()), add="+")
+#valueIndexEntry.bind("<Return>", lambda e: writeValue("index", valueIndexEntry, valueIndexEntry.get()))
+#valueIndexEntry.bind("<Key>", lambda e: valueIndexEntry.configure(background="white"))
+#valueIndexEntry.bind("<Button-1>", lambda e: valueIndexEntry.configure(background="white"))
 valueIndexEntry.bind("<Key>", lambda e: "break")
 valueIndexEntry.pack()
 
 valueUnknown2Entry = Entry(valueFrame, width=30, state=DISABLED)
-valueUnknown2Entry.bind("<FocusOut>", lambda e: writeValue("unknown2", valueUnknown2Entry.get()))
-valueUnknown2Entry.bind("<Return>", lambda e: writeValue("unknown2", valueUnknown2Entry.get()))
+valueUnknown2Entry.bind("<FocusOut>", lambda e: valueUnknown2Entry.configure(background="white"))
+valueUnknown2Entry.bind("<FocusOut>", lambda e: writeValue("unknown2", valueUnknown2Entry, valueUnknown2Entry.get()), add="+")
+valueUnknown2Entry.bind("<Return>", lambda e: writeValue("unknown2", valueUnknown2Entry, valueUnknown2Entry.get()))
+valueUnknown2Entry.bind("<Key>", lambda e: valueUnknown2Entry.configure(background="white"))
+valueUnknown2Entry.bind("<Button-1>", lambda e: valueUnknown2Entry.configure(background="white"))
 valueUnknown2Entry.pack()
 
 valuePosXEntry = Entry(valueFrame, width=30, state=DISABLED)
-valuePosXEntry.bind("<FocusOut>", lambda e: writeValue("posX", valuePosXEntry.get()))
-valuePosXEntry.bind("<Return>", lambda e: writeValue("posX", valuePosXEntry.get()))
+valuePosXEntry.bind("<FocusOut>", lambda e: valuePosXEntry.configure(background="white"))
+valuePosXEntry.bind("<FocusOut>", lambda e: writeValue("posX", valuePosXEntry, valuePosXEntry.get()), add="+")
+valuePosXEntry.bind("<Return>", lambda e: writeValue("posX", valuePosXEntry, valuePosXEntry.get()))
+valuePosXEntry.bind("<Key>", lambda e: valuePosXEntry.configure(background="white"))
+valuePosXEntry.bind("<Button-1>", lambda e: valuePosXEntry.configure(background="white"))
 valuePosXEntry.pack()
 
 valuePosYEntry = Entry(valueFrame, width=30, state=DISABLED)
-valuePosYEntry.bind("<FocusOut>", lambda e: writeValue("posY", valuePosYEntry.get()))
-valuePosYEntry.bind("<Return>", lambda e: writeValue("posY", valuePosYEntry.get()))
+valuePosYEntry.bind("<FocusOut>", lambda e: valuePosYEntry.configure(background="white"))
+valuePosYEntry.bind("<FocusOut>", lambda e: writeValue("posY", valuePosYEntry, valuePosYEntry.get()), add="+")
+valuePosYEntry.bind("<Return>", lambda e: writeValue("posY", valuePosYEntry, valuePosYEntry.get()))
+valuePosYEntry.bind("<Key>", lambda e: valuePosYEntry.configure(background="white"))
+valuePosYEntry.bind("<Button-1>", lambda e: valuePosYEntry.configure(background="white"))
 valuePosYEntry.pack()
 
 valuePosZEntry = Entry(valueFrame, width=30, state=DISABLED)
-valuePosZEntry.bind("<FocusOut>", lambda e: writeValue("posZ", valuePosZEntry.get()))
-valuePosZEntry.bind("<Return>", lambda e: writeValue("posZ", valuePosZEntry.get()))
+valuePosZEntry.bind("<FocusOut>", lambda e: valuePosZEntry.configure(background="white"))
+valuePosZEntry.bind("<FocusOut>", lambda e: writeValue("posZ", valuePosZEntry, valuePosZEntry.get()), add="+")
+valuePosZEntry.bind("<Return>", lambda e: writeValue("posZ", valuePosZEntry, valuePosZEntry.get()))
+valuePosZEntry.bind("<Key>", lambda e: valuePosZEntry.configure(background="white"))
+valuePosZEntry.bind("<Button-1>", lambda e: valuePosZEntry.configure(background="white"))
 valuePosZEntry.pack()
 
 valueUnknown3Entry = Entry(valueFrame, width=30, state=DISABLED)
-valueUnknown3Entry.bind("<FocusOut>", lambda e: writeValue("unknown3", valueUnknown3Entry.get()))
-valueUnknown3Entry.bind("<Return>", lambda e: writeValue("unknown3", valueUnknown3Entry.get()))
+valueUnknown3Entry.bind("<FocusOut>", lambda e: valueUnknown3Entry.configure(background="white"))
+valueUnknown3Entry.bind("<FocusOut>", lambda e: writeValue("unknown3", valueUnknown3Entry, valueUnknown3Entry.get()), add="+")
+valueUnknown3Entry.bind("<Return>", lambda e: writeValue("unknown3", valueUnknown3Entry, valueUnknown3Entry.get()))
+valueUnknown3Entry.bind("<Key>", lambda e: valueUnknown3Entry.configure(background="white"))
+valueUnknown3Entry.bind("<Button-1>", lambda e: valueUnknown3Entry.configure(background="white"))
 valueUnknown3Entry.pack()
 
 valueUnknown4Entry = Entry(valueFrame, width=30, state=DISABLED)
-valueUnknown4Entry.bind("<FocusOut>", lambda e: writeValue("unknown4", valueUnknown4Entry.get()))
-valueUnknown4Entry.bind("<Return>", lambda e: writeValue("unknown4", valueUnknown4Entry.get()))
+valueUnknown4Entry.bind("<FocusOut>", lambda e: valueUnknown4Entry.configure(background="white"))
+valueUnknown4Entry.bind("<FocusOut>", lambda e: writeValue("unknown4", valueUnknown4Entry, valueUnknown4Entry.get()), add="+")
+valueUnknown4Entry.bind("<Return>", lambda e: writeValue("unknown4", valueUnknown4Entry, valueUnknown4Entry.get()))
+valueUnknown4Entry.bind("<Key>", lambda e: valueUnknown4Entry.configure(background="white"))
+valueUnknown4Entry.bind("<Button-1>", lambda e: valueUnknown4Entry.configure(background="white"))
 valueUnknown4Entry.pack()
 
 valueUnknown5Entry = Entry(valueFrame, width=30, state=DISABLED)
-valueUnknown5Entry.bind("<FocusOut>", lambda e: writeValue("unknown5", valueUnknown5Entry.get()))
-valueUnknown5Entry.bind("<Return>", lambda e: writeValue("unknown5", valueUnknown5Entry.get()))
+valueUnknown5Entry.bind("<FocusOut>", lambda e: valueUnknown5Entry.configure(background="white"))
+valueUnknown5Entry.bind("<FocusOut>", lambda e: writeValue("unknown5", valueUnknown5Entry, valueUnknown5Entry.get()), add="+")
+valueUnknown5Entry.bind("<Return>", lambda e: writeValue("unknown5", valueUnknown5Entry, valueUnknown5Entry.get()))
+valueUnknown5Entry.bind("<Key>", lambda e: valueUnknown5Entry.configure(background="white"))
+valueUnknown5Entry.bind("<Button-1>", lambda e: valueUnknown5Entry.configure(background="white"))
 valueUnknown5Entry.pack()
 
 valueUnknown6Entry = Entry(valueFrame, width=30, state=DISABLED)
-valueUnknown6Entry.bind("<FocusOut>", lambda e: writeValue("unknown6", valueUnknown6Entry.get()))
-valueUnknown6Entry.bind("<Return>", lambda e: writeValue("unknown6", valueUnknown6Entry.get()))
+valueUnknown6Entry.bind("<FocusOut>", lambda e: valueUnknown6Entry.configure(background="white"))
+valueUnknown6Entry.bind("<FocusOut>", lambda e: writeValue("unknown6", valueUnknown6Entry, valueUnknown6Entry.get()), add="+")
+valueUnknown6Entry.bind("<Return>", lambda e: writeValue("unknown6", valueUnknown6Entry, valueUnknown6Entry.get()))
+valueUnknown6Entry.bind("<Key>", lambda e: valueUnknown6Entry.configure(background="white"))
+valueUnknown6Entry.bind("<Button-1>", lambda e: valueUnknown6Entry.configure(background="white"))
 valueUnknown6Entry.pack()
 
 valueUnknown7Entry = Entry(valueFrame, width=30, state=DISABLED)
-valueUnknown7Entry.bind("<FocusOut>", lambda e: writeValue("unknown7", valueUnknown7Entry.get()))
-valueUnknown7Entry.bind("<Return>", lambda e: writeValue("unknown7", valueUnknown7Entry.get()))
+valueUnknown7Entry.bind("<FocusOut>", lambda e: valueUnknown7Entry.configure(background="white"))
+valueUnknown7Entry.bind("<FocusOut>", lambda e: writeValue("unknown7", valueUnknown7Entry, valueUnknown7Entry.get()), add="+")
+valueUnknown7Entry.bind("<Return>", lambda e: writeValue("unknown7", valueUnknown7Entry, valueUnknown7Entry.get()))
+valueUnknown7Entry.bind("<Key>", lambda e: valueUnknown7Entry.configure(background="white"))
+valueUnknown7Entry.bind("<Button-1>", lambda e: valueUnknown7Entry.configure(background="white"))
 valueUnknown7Entry.pack()
 
 valueUnknown8Entry = Entry(valueFrame, width=30, state=DISABLED)
-valueUnknown8Entry.bind("<FocusOut>", lambda e: writeValue("unknown8", valueUnknown8Entry.get()))
-valueUnknown8Entry.bind("<Return>", lambda e: writeValue("unknown8", valueUnknown8Entry.get()))
+valueUnknown8Entry.bind("<FocusOut>", lambda e: valueUnknown8Entry.configure(background="white"))
+valueUnknown8Entry.bind("<FocusOut>", lambda e: writeValue("unknown8", valueUnknown8Entry, valueUnknown8Entry.get()), add="+")
+valueUnknown8Entry.bind("<Return>", lambda e: writeValue("unknown8", valueUnknown8Entry, valueUnknown8Entry.get()))
+valueUnknown8Entry.bind("<Key>", lambda e: valueUnknown8Entry.configure(background="white"))
+valueUnknown8Entry.bind("<Button-1>", lambda e: valueUnknown8Entry.configure(background="white"))
 valueUnknown8Entry.pack()
 
 valueUnknown9Entry = Entry(valueFrame, width=30, state=DISABLED)
-valueUnknown9Entry.bind("<FocusOut>", lambda e: writeValue("unknown9", valueUnknown9Entry.get()))
-valueUnknown9Entry.bind("<Return>", lambda e: writeValue("unknown9", valueUnknown9Entry.get()))
+valueUnknown9Entry.bind("<FocusOut>", lambda e: valueUnknown9Entry.configure(background="white"))
+valueUnknown9Entry.bind("<FocusOut>", lambda e: writeValue("unknown9", valueUnknown9Entry, valueUnknown9Entry.get()), add="+")
+valueUnknown9Entry.bind("<Return>", lambda e: writeValue("unknown9", valueUnknown9Entry, valueUnknown9Entry.get()))
+valueUnknown9Entry.bind("<Key>", lambda e: valueUnknown9Entry.configure(background="white"))
+valueUnknown9Entry.bind("<Button-1>", lambda e: valueUnknown9Entry.configure(background="white"))
 valueUnknown9Entry.pack()
 
 valueUnknown10Entry = Entry(valueFrame, width=30, state=DISABLED)
-valueUnknown10Entry.bind("<FocusOut>", lambda e: writeValue("unknown10", valueUnknown10Entry.get()))
-valueUnknown10Entry.bind("<Return>", lambda e: writeValue("unknown10", valueUnknown10Entry.get()))
+valueUnknown10Entry.bind("<FocusOut>", lambda e: valueUnknown10Entry.configure(background="white"))
+valueUnknown10Entry.bind("<FocusOut>", lambda e: writeValue("unknown10", valueUnknown10Entry, valueUnknown10Entry.get()), add="+")
+valueUnknown10Entry.bind("<Return>", lambda e: writeValue("unknown10", valueUnknown10Entry, valueUnknown10Entry.get()))
+valueUnknown10Entry.bind("<Key>", lambda e: valueUnknown10Entry.configure(background="white"))
+valueUnknown10Entry.bind("<Button-1>", lambda e: valueUnknown10Entry.configure(background="white"))
 valueUnknown10Entry.pack()
 
 valueHeaderEndEntry = Entry(valueFrame, width=30, state=DISABLED, bg='#f0f0f0')
@@ -526,13 +634,19 @@ typePropertiesFrame.grid(row=2, column=3, sticky="W")
 # Type properties are shown using two text boxes: One in hex and one encoded into text. This allows the user to edit certain type properties either by changing hex values or writing in names in text depending on the situation.
 valueTypePropertiesHex = Text(typePropertiesFrame, height=18, width=16, state=DISABLED, font=monoFont)
 valueTypePropertiesHex.grid(row=0, column=1)
-valueTypePropertiesHex.bind("<FocusOut>", lambda e: writeValue("typeProperties", valueTypePropertiesHex.get("1.0", END).rstrip('\n'))) # Text widgets automatically put a new line char '\n' at the end of the new lines, so each of these are stripped of their new line chars before being checked during writeValue().
-valueTypePropertiesHex.bind("<Return>", lambda e: writeValue("typeProperties", valueTypePropertiesHex.get("1.0", END).rstrip('\n'))) 
+valueTypePropertiesHex.bind("<FocusOut>", lambda e: valueTypePropertiesHex.configure(background="white"))
+valueTypePropertiesHex.bind("<FocusOut>", lambda e: writeValue("typeProperties", valueTypePropertiesHex, valueTypePropertiesHex.get("1.0", END).rstrip('\n')), add="+") # Text widgets automatically put a new line char '\n' at the end of the new lines, so each of these are stripped of their new line chars before being checked during writeValue().
+valueTypePropertiesHex.bind("<Return>", lambda e: writeValue("typeProperties", valueTypePropertiesHex, valueTypePropertiesHex.get("1.0", END).rstrip('\n'))) 
+valueTypePropertiesHex.bind("<Key>", lambda e: valueTypePropertiesHex.configure(background="white"))
+valueTypePropertiesHex.bind("<Button-1>", lambda e: valueTypePropertiesHex.configure(background="white"))
 
 valueTypePropertiesText = Text(typePropertiesFrame, height=18, width=8, state=DISABLED, font=monoFont)
 valueTypePropertiesText.grid(row=0, column=2)
-valueTypePropertiesText.bind("<FocusOut>", lambda e: writeValue("typeProperties", (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('.', '\x00').encode('cp1252').hex())))
-valueTypePropertiesText.bind("<Return>", lambda e: writeValue("typeProperties", (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('.', '\x00').encode('cp1252').hex())))
+valueTypePropertiesText.bind("<FocusOut>", lambda e: valueTypePropertiesHex.configure(background="white"))
+valueTypePropertiesText.bind("<FocusOut>", lambda e: writeValue("typeProperties", valueTypePropertiesText, (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('.', '\x00').encode('cp1252').hex())), add="+")
+valueTypePropertiesText.bind("<Return>", lambda e: writeValue("typeProperties", valueTypePropertiesText, (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('.', '\x00').encode('cp1252').hex())))
+valueTypePropertiesText.bind("<Key>", lambda e: valueTypePropertiesHex.configure(background="white"))
+valueTypePropertiesText.bind("<Button-1>", lambda e: valueTypePropertiesHex.configure(background="white"))
 
 # Functions to scroll both the hex and text Text Widgets at the same time. First functions handles the scroll bar, second function handles the mouse wheel
 def typePropertiesScrollTogetherBar(*args):

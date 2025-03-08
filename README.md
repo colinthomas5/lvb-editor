@@ -7,6 +7,10 @@ A basic editor for .lvb files from games that use the WayForward Engine
 This tool can open, view, modify, and save the contents of the .lvb files used by WayForward Technologies. This project is made specifically for compatability with .lvb and .pak files from the PC version of Adventure Time: Secret of the Nameless Kingdom, however it may function with over WayForward games that use .lvb files stored in .pak files.
 
 ## Development Log
+3/7/25 - Search bar for the entity window is now implemented. This allows to search through entities by name. It jumps to results based on their index in the layer, and pressing enter on a search numerous times lets you skip to the next entries in the layer that apply to the search term. It's a somewhat cruel implementation but it works so I can't complain. Entry boxes now also become red when an invalid entry is entered, becoming white again after the next interaction in the program. 
+
+Although I didnt document it at the time, I added the support for non-four layer amounts on 2/24/25. This was implemented in the hopes of adding support for other LVB types in the future (more specifically from games like Adventure Time: Explore the Dungeon Because I Don't Know! and DuckTales Remastered). Usability will continue to be my focus moving forward, however I do have ideas for support for other LVB formats and a UI overhaul that lets you edit entities in separate pop-out windows.
+
 2/21/25 - Support for editing type properties is now implemented. Type properties are shown as hex values and as a decoded string, with both being editable. Editing type propertie is very dangerous right now since nothing is properly labeled, so more research will be required for each type to figure out what their properties are. The end goal is to have type properties look similar to the universal properties, with each value being labeled and in a row for the user.
 
 2/19/25 - Failsafes were added to minimize the ability for a user to create an incompatible file. System messages section was also created, which gives feedback to the user while they are editing files.

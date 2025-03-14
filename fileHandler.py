@@ -63,7 +63,7 @@ def openLevelFile(levelFile, fileExtension):
             layerList.append(layer)
         headerSeek+=16
 
-    return layerList, fileOffset
+    return lvbType, layerList, fileOffset
 
 # Entity objects represent all of the entities that are within the .lvb files. Regardless of type, entities all share the same header format. Different entity types will have different data following their "headerEnd", which should always be "FFFFFFFF"
 class Entity1:

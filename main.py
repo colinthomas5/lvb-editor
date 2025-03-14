@@ -133,10 +133,13 @@ def openFile():
     layerListbox.delete(0, END)
     entityListbox.delete(0, END)
     clearValues()
+    global lvbType
+    lvbType = openLevel[0]
+    showProperties(lvbType)
     global layerList
-    layerList = openLevel[0]
+    layerList = openLevel[1]
     global fileOffset
-    fileOffset = openLevel[1]
+    fileOffset = openLevel[2]
     global originalLayerList
     originalLayerList = layerList
     layerNumber=1
@@ -164,6 +167,7 @@ def closeFile():
     entitySearchEntry.delete(0, END)
     clearValues()
     disableValues()
+    clearProperties()
     global currentEntity
     global selectedLayer
     currentEntity = None
@@ -257,7 +261,7 @@ def refreshValues():
     global currentEntity
     clearValues()
     valueNameEntry.insert(0, currentEntity.name)
-    valueTypeEntry.insert(0, entityTypes.getTypeName(currentEntity.type))
+    valueTypeEntry.insert(0, entityTypes.getTypeName(currentEntity.type, lvbType))
     valueUnknown1Entry.insert(0, currentEntity.unknown1)
     valueIndexEntry.insert(0, currentEntity.index)
     valueUnknown2Entry.insert(0, currentEntity.unknown2)
@@ -273,8 +277,32 @@ def refreshValues():
     valueUnknown9Entry.insert(0, currentEntity.unknown9)
     valueUnknown10Entry.insert(0, currentEntity.unknown10)
     valueHeaderEndEntry.insert(0, currentEntity.headerEnd)
-    valueTypePropertiesHex.insert("1.0", currentEntity.typeProperties)
-    valueTypePropertiesText.insert("1.0", bytearray.fromhex(currentEntity.typeProperties).decode('cp1252').replace('\x00', '.'))
+    propertiesTagColor = "white"
+    propertiesTagCount = 0
+    typeProperties = currentEntity.typeProperties
+    for char in typeProperties:
+        if propertiesTagCount == 2:
+            propertiesTagCount = 0
+            if propertiesTagColor == "white":
+                propertiesTagColor = "gray"
+            elif propertiesTagColor == "gray":
+                propertiesTagColor = "white"
+        valueTypePropertiesHex.insert(END, char, propertiesTagColor)
+        propertiesTagCount+=1
+    #valueTypePropertiesHex.insert("1.0", currentEntity.typeProperties)
+    propertiesTagColor = "white"
+    propertiesTagCount = 0
+    typeProperties = bytearray.fromhex(currentEntity.typeProperties).decode('cp1252').replace('\x00', '•')
+    for char in typeProperties:
+        if propertiesTagCount == 1:
+            propertiesTagCount = 0
+            if propertiesTagColor == "white":
+                propertiesTagColor = "gray"
+            elif propertiesTagColor == "gray":
+                propertiesTagColor = "white"
+        valueTypePropertiesText.insert(END, char, propertiesTagColor)
+        propertiesTagCount+=1
+    #valueTypePropertiesText.insert("1.0", bytearray.fromhex(currentEntity.typeProperties).decode('cp1252').replace('\x00', '•'))
 
 # Listbox that shows all entity layers
 entityListbox = Listbox(entityFrame, selectmode = SINGLE, width=40, height=20)
@@ -365,90 +393,128 @@ propertyLabelFrame = LabelFrame(propertyFrame, width=8)
 propertyLabelFrame.grid(row=1, column=0, sticky="NS")
 
 # Show list of properties next to the editable values. This method sucks and uses so many lines but sadly using a listbox has the properties and values not line up so this was my best implementation of this.
-propertyNameEntry = Entry(propertyLabelFrame, width=12)
-propertyNameEntry.insert(0, "Name")
-propertyNameEntry.bind("<Key>", lambda e: "break")
-propertyNameEntry.pack()
+property1Entry = Entry(propertyLabelFrame, width=12)
+property1Entry.bind("<Key>", lambda e: "break")
+property1Entry.pack()
 
-propertyTypeEntry = Entry(propertyLabelFrame, width=12)
-propertyTypeEntry.insert(1, "Type")
-propertyTypeEntry.bind("<Key>", lambda e: "break")
-propertyTypeEntry.pack()
+property2Entry = Entry(propertyLabelFrame, width=12)
+property2Entry.bind("<Key>", lambda e: "break")
+property2Entry.pack()
 
-propertyUnknown1Entry = Entry(propertyLabelFrame, width=12)
-propertyUnknown1Entry.insert(2, "Unknown1")
-propertyUnknown1Entry.bind("<Key>", lambda e: "break")
-propertyUnknown1Entry.pack()
+property3Entry = Entry(propertyLabelFrame, width=12)
+property3Entry.bind("<Key>", lambda e: "break")
+property3Entry.pack()
 
-propertyIndexEntry = Entry(propertyLabelFrame, width=12)
-propertyIndexEntry.insert(3, "Index")
-propertyIndexEntry.bind("<Key>", lambda e: "break")
-propertyIndexEntry.pack()
+property4Entry = Entry(propertyLabelFrame, width=12)
+property4Entry.bind("<Key>", lambda e: "break")
+property4Entry.pack()
 
-propertyUnknown2Entry = Entry(propertyLabelFrame, width=12)
-propertyUnknown2Entry.insert(4, "Unknown2")
-propertyUnknown2Entry.bind("<Key>", lambda e: "break")
-propertyUnknown2Entry.pack()
+property5Entry = Entry(propertyLabelFrame, width=12)
+property5Entry.bind("<Key>", lambda e: "break")
+property5Entry.pack()
 
-propertyPosXEntry = Entry(propertyLabelFrame, width=12)
-propertyPosXEntry.insert(5, "PositionX")
-propertyPosXEntry.bind("<Key>", lambda e: "break")
-propertyPosXEntry.pack()
+property6Entry = Entry(propertyLabelFrame, width=12)
+property6Entry.bind("<Key>", lambda e: "break")
+property6Entry.pack()
 
-propertyPosYEntry = Entry(propertyLabelFrame, width=12)
-propertyPosYEntry.insert(6, "PositionY")
-propertyPosYEntry.bind("<Key>", lambda e: "break")
-propertyPosYEntry.pack()
+property7Entry = Entry(propertyLabelFrame, width=12)
+property7Entry.bind("<Key>", lambda e: "break")
+property7Entry.pack()
 
-propertyPosZEntry = Entry(propertyLabelFrame, width=12)
-propertyPosZEntry.insert(7, "PositionZ")
-propertyPosZEntry.bind("<Key>", lambda e: "break")
-propertyPosZEntry.pack()
+property8Entry = Entry(propertyLabelFrame, width=12)
+property8Entry.bind("<Key>", lambda e: "break")
+property8Entry.pack()
 
-propertyUnknown3Entry = Entry(propertyLabelFrame, width=12)
-propertyUnknown3Entry.insert(8, "Unknown3")
-propertyUnknown3Entry.bind("<Key>", lambda e: "break")
-propertyUnknown3Entry.pack()
+property9Entry = Entry(propertyLabelFrame, width=12)
+property9Entry.bind("<Key>", lambda e: "break")
+property9Entry.pack()
 
-propertyUnknown4Entry = Entry(propertyLabelFrame, width=12)
-propertyUnknown4Entry.insert(9, "Unknown4")
-propertyUnknown4Entry.bind("<Key>", lambda e: "break")
-propertyUnknown4Entry.pack()
+property10Entry = Entry(propertyLabelFrame, width=12)
+property10Entry.bind("<Key>", lambda e: "break")
+property10Entry.pack()
 
-propertyUnknown5Entry = Entry(propertyLabelFrame, width=12)
-propertyUnknown5Entry.insert(10, "Unknown5")
-propertyUnknown5Entry.bind("<Key>", lambda e: "break")
-propertyUnknown5Entry.pack()
+property11Entry = Entry(propertyLabelFrame, width=12)
+property11Entry.bind("<Key>", lambda e: "break")
+property11Entry.pack()
 
-propertyUnknown6Entry = Entry(propertyLabelFrame, width=12)
-propertyUnknown6Entry.insert(11, "Unknown6")
-propertyUnknown6Entry.bind("<Key>", lambda e: "break")
-propertyUnknown6Entry.pack()
+property12Entry = Entry(propertyLabelFrame, width=12)
+property12Entry.bind("<Key>", lambda e: "break")
+property12Entry.pack()
 
-propertyUnknown7Entry = Entry(propertyLabelFrame, width=12)
-propertyUnknown7Entry.insert(12, "Unknown7")
-propertyUnknown7Entry.bind("<Key>", lambda e: "break")
-propertyUnknown7Entry.pack()
+property13Entry = Entry(propertyLabelFrame, width=12)
+property13Entry.bind("<Key>", lambda e: "break")
+property13Entry.pack()
 
-propertyUnknown8Entry = Entry(propertyLabelFrame, width=12)
-propertyUnknown8Entry.insert(13, "Unknown8")
-propertyUnknown8Entry.bind("<Key>", lambda e: "break")
-propertyUnknown8Entry.pack()
+property14Entry = Entry(propertyLabelFrame, width=12)
+property14Entry.bind("<Key>", lambda e: "break")
+property14Entry.pack()
 
-propertyUnknown9Entry = Entry(propertyLabelFrame, width=12)
-propertyUnknown9Entry.insert(14, "Unknown9")
-propertyUnknown9Entry.bind("<Key>", lambda e: "break")
-propertyUnknown9Entry.pack()
+property15Entry = Entry(propertyLabelFrame, width=12)
+property15Entry.bind("<Key>", lambda e: "break")
+property15Entry.pack()
 
-propertyUnknown10Entry = Entry(propertyLabelFrame, width=12)
-propertyUnknown10Entry.insert(15, "Unknown10")
-propertyUnknown10Entry.bind("<Key>", lambda e: "break")
-propertyUnknown10Entry.pack()
+property16Entry = Entry(propertyLabelFrame, width=12)
+property16Entry.bind("<Key>", lambda e: "break")
+property16Entry.pack()
 
 propertyHeaderEndEntry = Entry(propertyLabelFrame, width=12)
 propertyHeaderEndEntry.insert(16, "HeaderEnd")
 propertyHeaderEndEntry.bind("<Key>", lambda e: "break")
 #propertyHeaderEndEntry.pack() # Unable to be edited so not presented to user
+
+def showProperties(type):
+    if type == 1: #Not researched yet; Using values from Type 2
+        property1Entry.insert(0, "Name")
+        property2Entry.insert(1, "Type")
+        property3Entry.insert(2, "Unknown1")
+        property4Entry.insert(3, "Index")
+        property5Entry.insert(4, "Unknown2")
+        property6Entry.insert(5, "PositionX")
+        property7Entry.insert(6, "PositionY")
+        property8Entry.insert(7, "PositionZ")
+        property9Entry.insert(8, "Unknown3")
+        property10Entry.insert(9, "Unknown4")
+        property11Entry.insert(10, "Unknown5")
+        property12Entry.insert(11, "Unknown6")
+        property13Entry.insert(12, "Unknown7")
+        property14Entry.insert(13, "Unknown8")
+        property15Entry.insert(14, "Unknown9")
+        property16Entry.insert(15, "Unknown10")
+    if type == 2:
+        property1Entry.insert(0, "Name")
+        property2Entry.insert(1, "Type")
+        property3Entry.insert(2, "Unknown1")
+        property4Entry.insert(3, "Index")
+        property5Entry.insert(4, "Unknown2")
+        property6Entry.insert(5, "PositionX")
+        property7Entry.insert(6, "PositionY")
+        property8Entry.insert(7, "PositionZ")
+        property9Entry.insert(8, "Unknown3")
+        property10Entry.insert(9, "Unknown4")
+        property11Entry.insert(10, "Unknown5")
+        property12Entry.insert(11, "Unknown6")
+        property13Entry.insert(12, "Unknown7")
+        property14Entry.insert(13, "Unknown8")
+        property15Entry.insert(14, "Unknown9")
+        property16Entry.insert(15, "Unknown10")
+
+def clearProperties():
+    property1Entry.delete(0, END)
+    property2Entry.delete(0, END)
+    property3Entry.delete(0, END)
+    property4Entry.delete(0, END)
+    property5Entry.delete(0, END)
+    property6Entry.delete(0, END)
+    property7Entry.delete(0, END)
+    property8Entry.delete(0, END)
+    property9Entry.delete(0, END)
+    property10Entry.delete(0, END)
+    property11Entry.delete(0, END)
+    property12Entry.delete(0, END)
+    property13Entry.delete(0, END)
+    property14Entry.delete(0, END)
+    property15Entry.delete(0, END)
+    property16Entry.delete(0, END)
 
 # Writes any values changed back to the currently-selected entity object
 def writeValue(property, entryBox, value):
@@ -633,6 +699,9 @@ typePropertiesFrame.grid(row=2, column=3, sticky="W")
 # Type properties are shown using two text boxes: One in hex and one encoded into text. This allows the user to edit certain type properties either by changing hex values or writing in names in text depending on the situation.
 valueTypePropertiesHex = Text(typePropertiesFrame, height=18, width=16, state=DISABLED, font=monoFont)
 valueTypePropertiesHex.grid(row=0, column=0)
+valueTypePropertiesHex.tag_configure("white", background="white")
+valueTypePropertiesHex.tag_configure("gray", background="lightgray")
+valueTypePropertiesHex.tag_raise("sel")
 valueTypePropertiesHex.bind("<FocusOut>", lambda e: valueTypePropertiesHex.configure(background="white"))
 valueTypePropertiesHex.bind("<FocusOut>", lambda e: writeValue("typeProperties", valueTypePropertiesHex, valueTypePropertiesHex.get("1.0", END).rstrip('\n')), add="+") # Text widgets automatically put a new line char '\n' at the end of the new lines, so each of these are stripped of their new line chars before being checked during writeValue().
 valueTypePropertiesHex.bind("<Return>", lambda e: writeValue("typeProperties", valueTypePropertiesHex, valueTypePropertiesHex.get("1.0", END).rstrip('\n'))) 
@@ -641,9 +710,12 @@ valueTypePropertiesHex.bind("<Button-1>", lambda e: valueTypePropertiesHex.confi
 
 valueTypePropertiesText = Text(typePropertiesFrame, height=18, width=8, state=DISABLED, font=monoFont)
 valueTypePropertiesText.grid(row=0, column=1)
+valueTypePropertiesText.tag_configure("white", background="white")
+valueTypePropertiesText.tag_configure("gray", background="lightgray")
+valueTypePropertiesText.tag_raise("sel")
 valueTypePropertiesText.bind("<FocusOut>", lambda e: valueTypePropertiesHex.configure(background="white"))
-valueTypePropertiesText.bind("<FocusOut>", lambda e: writeValue("typeProperties", valueTypePropertiesText, (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('.', '\x00').encode('cp1252').hex())), add="+")
-valueTypePropertiesText.bind("<Return>", lambda e: writeValue("typeProperties", valueTypePropertiesText, (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('.', '\x00').encode('cp1252').hex())))
+valueTypePropertiesText.bind("<FocusOut>", lambda e: writeValue("typeProperties", valueTypePropertiesText, (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('•', '\x00').encode('cp1252').hex())), add="+")
+valueTypePropertiesText.bind("<Return>", lambda e: writeValue("typeProperties", valueTypePropertiesText, (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('•', '\x00').encode('cp1252').hex())))
 valueTypePropertiesText.bind("<Key>", lambda e: valueTypePropertiesHex.configure(background="white"))
 valueTypePropertiesText.bind("<Button-1>", lambda e: valueTypePropertiesHex.configure(background="white"))
 

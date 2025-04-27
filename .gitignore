@@ -5,6 +5,7 @@
 
 # Custom-added files (colin did this)
 *.spec
+build_exe_command.txt
 
 # User-specific files
 *.rsuser

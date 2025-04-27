@@ -1,9 +1,12 @@
 import os
 import sys
 import io
+import struct
+
 import fileHandler
 import entityTypes
 import saveHandler
+
 from tkinter import *
 from tkinter import font
 from tkinter import filedialog
@@ -275,9 +278,9 @@ def refreshValues():
     if lvbType == 1:
         value1Entry.insert(0, currentEntity.name)
         value2Entry.insert(0, entityTypes.getTypeName(currentEntity.type, lvbType))
-        value3Entry.insert(0, currentEntity.posX)
-        value4Entry.insert(0, currentEntity.posY)
-        value5Entry.insert(0, currentEntity.posZ)
+        value3Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.posX))[0])
+        value4Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.posY))[0])
+        value5Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.posZ))[0])
         value6Entry.insert(0, currentEntity.unknown1)
         value7Entry.insert(0, currentEntity.unknown2)
         value8Entry.insert(0, currentEntity.unknown3)
@@ -296,17 +299,17 @@ def refreshValues():
         value3Entry.insert(0, currentEntity.unknown1)
         value4Entry.insert(0, currentEntity.index)
         value5Entry.insert(0, currentEntity.unknown2)
-        value6Entry.insert(0, currentEntity.posX)
-        value7Entry.insert(0, currentEntity.posY)
-        value8Entry.insert(0, currentEntity.posZ)
-        value9Entry.insert(0, currentEntity.unknown3)
-        value10Entry.insert(0, currentEntity.unknown4)
-        value11Entry.insert(0, currentEntity.unknown5)
-        value12Entry.insert(0, currentEntity.unknown6)
-        value13Entry.insert(0, currentEntity.unknown7)
-        value14Entry.insert(0, currentEntity.unknown8)
-        value15Entry.insert(0, currentEntity.unknown9)
-        value16Entry.insert(0, currentEntity.unknown10)
+        value6Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.posX))[0])
+        value7Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.posY))[0])
+        value8Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.posZ))[0])
+        value9Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.unknown3))[0])
+        value10Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.unknown4))[0])
+        value11Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.unknown5))[0])
+        value12Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.unknown6))[0])
+        value13Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.unknown7))[0])
+        value14Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.unknown8))[0])
+        value15Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.unknown9))[0])
+        value16Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.unknown10))[0])
         valueHeaderEndEntry.insert(0, currentEntity.headerEnd)
     propertiesTagColor = "white"
     propertiesTagCount = 0
@@ -520,13 +523,13 @@ def showProperties(type):
         property6Entry.insert(5, "PositionX")
         property7Entry.insert(6, "PositionY")
         property8Entry.insert(7, "PositionZ")
-        property9Entry.insert(8, "Unknown3")
-        property10Entry.insert(9, "Unknown4")
+        property9Entry.insert(8, "StretchX")
+        property10Entry.insert(9, "StretchZ")
         property11Entry.insert(10, "Unknown5")
         property12Entry.insert(11, "Unknown6")
         property13Entry.insert(12, "Unknown7")
-        property14Entry.insert(13, "Unknown8")
-        property15Entry.insert(14, "Unknown9")
+        property14Entry.insert(13, "RotationX(?)")
+        property15Entry.insert(14, "RotationZ(?)")
         property16Entry.insert(15, "Unknown10")
 
 def clearProperties():
@@ -551,6 +554,11 @@ def clearProperties():
 def writeValue(property, entryBox, value):
     global currentEntity
     finalValue = None
+    if property != "entry1":
+        value = float(value)
+        value = hex(struct.unpack('<i', struct.pack('>f', value))[0]).lstrip("0x")
+        while len(value) < 8:
+            value = "0"+value
     for key in currentEntity.__dict__.keys():
             if key == property and currentEntity.__dict__.get(key) != value:  
                 if len(value) == len(currentEntity.__dict__.get(key)) and key != "name":

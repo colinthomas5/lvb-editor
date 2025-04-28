@@ -281,14 +281,14 @@ def refreshValues():
         value3Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.posX))[0])
         value4Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.posY))[0])
         value5Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.posZ))[0])
-        value6Entry.insert(0, currentEntity.unknown1)
-        value7Entry.insert(0, currentEntity.unknown2)
-        value8Entry.insert(0, currentEntity.unknown3)
-        value9Entry.insert(0, currentEntity.unknown4)
-        value10Entry.insert(0, currentEntity.unknown5)
-        value11Entry.insert(0, currentEntity.unknown6)
-        value12Entry.insert(0, currentEntity.unknown7)
-        #value13Entry.insert(0, currentEntity.unknown7)
+        value6Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.unknown1))[0])
+        value7Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.unknown2))[0])
+        value8Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.unknown3))[0])
+        value9Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.unknown4))[0])
+        value10Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.unknown5))[0])
+        value11Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.unknown6))[0])
+        value12Entry.insert(0, struct.unpack('<f', bytes.fromhex(currentEntity.unknown7))[0])
+        #value13Entry.insert(0, currentEntity.unknown7) #DNE
         #value14Entry.insert(0, currentEntity.unknown8)
         #value15Entry.insert(0, currentEntity.unknown9)
         #value16Entry.insert(0, currentEntity.unknown10)
@@ -554,7 +554,7 @@ def clearProperties():
 def writeValue(property, entryBox, value):
     global currentEntity
     finalValue = None
-    if property != "entry1":
+    if property != 'name' or lvbType == 2 and property != 'name' and property != 'unknown1' and property != 'unknown2':
         value = float(value)
         value = hex(struct.unpack('<I', struct.pack('>f', value))[0]).lstrip("0x")
         while len(value) < 8:
@@ -579,7 +579,7 @@ def writeValue(property, entryBox, value):
                     entryBox.configure(background = "red")
                     print(currentEntity.name.decode('utf-8', 'ignore') + ": The value of " + property + " was not updated; Length of \"" + str(value) + "\" is invalid.")
                     return
-                print(currentEntity.name.decode('utf-8', 'ignore') + ": Value of " + property + " updated from \"" + str(currentEntity.__dict__.get(key)) + "\" to \"" + str(finalValue) + "\".")
+                print(currentEntity.name.decode('utf-8', 'ignore') + ": Value of " + property + " updated from \"" + str(currentEntity.__dict__.get(key)).lstrip("'b").rstrip("'") + "\" to \"" + str(finalValue).lstrip("'b").rstrip("'") + "\".")
                 currentEntity.__dict__.update({key : finalValue})
                 if len(fileChanges) == 0:
                     fileChanges.append(currentEntity)

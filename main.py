@@ -556,7 +556,7 @@ def writeValue(property, entryBox, value):
     finalValue = None
     if property != "entry1":
         value = float(value)
-        value = hex(struct.unpack('<i', struct.pack('>f', value))[0]).lstrip("0x")
+        value = hex(struct.unpack('<I', struct.pack('>f', value))[0]).lstrip("0x")
         while len(value) < 8:
             value = "0"+value
     for key in currentEntity.__dict__.keys():

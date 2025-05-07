@@ -326,7 +326,7 @@ def refreshValues():
     #valueTypePropertiesHex.insert("1.0", currentEntity.typeProperties)
     propertiesTagColor = "white"
     propertiesTagCount = 0
-    typeProperties = bytearray.fromhex(currentEntity.typeProperties).decode('utf-8', 'ignore').replace('\x00', '•')
+    typeProperties = bytearray.fromhex(currentEntity.typeProperties).decode('cp1252').replace('\x00', '•')
     for char in typeProperties:
         if propertiesTagCount == 1:
             propertiesTagCount = 0
@@ -554,11 +554,13 @@ def clearProperties():
 def writeValue(property, entryBox, value):
     global currentEntity
     finalValue = None
-    if property != 'name' or lvbType == 2 and property != 'name' and property != 'unknown1' and property != 'unknown2':
+    try:
         value = float(value)
         value = hex(struct.unpack('<I', struct.pack('>f', value))[0]).lstrip("0x")
         while len(value) < 8:
             value = "0"+value
+    except:
+            print("Entered value is not being converted to a float.")
     for key in currentEntity.__dict__.keys():
             if key == property and currentEntity.__dict__.get(key) != value:  
                 if len(value) == len(currentEntity.__dict__.get(key)) and key != "name":
@@ -568,18 +570,18 @@ def writeValue(property, entryBox, value):
                     except ValueError:
                         refreshValues()
                         entryBox.configure(background = "red")
-                        print(currentEntity.name.decode('utf-8', 'ignore') + ": The value of " + property + " was not updated; Value of \"" + value + "\" is invalid.")
+                        print(currentEntity.name.decode('cp1252') + ": The value of " + property + " was not updated; Value of \"" + value + "\" is invalid.")
                         return
                 elif key == "name":
                     if len(value) > 32:
-                        print(currentEntity.name.decode('utf-8', 'ignore') + ": Entered value was too many characters and was truncated.")
+                        print(currentEntity.name.decode('cp1252') + ": Entered value was too many characters and was truncated.")
                     finalValue = value[:32]
                 else:
                     refreshValues()
                     entryBox.configure(background = "red")
-                    print(currentEntity.name.decode('utf-8', 'ignore') + ": The value of " + property + " was not updated; Length of \"" + str(value) + "\" is invalid.")
+                    print(currentEntity.name.decode('cp1252') + ": The value of " + property + " was not updated; Length of \"" + str(value) + "\" is invalid.")
                     return
-                print(currentEntity.name.decode('utf-8', 'ignore') + ": Value of " + property + " updated from \"" + str(currentEntity.__dict__.get(key)).lstrip("'b").rstrip("'") + "\" to \"" + str(finalValue).lstrip("'b").rstrip("'") + "\".")
+                print(currentEntity.name.decode('cp1252') + ": Value of " + property + " updated from \"" + str(currentEntity.__dict__.get(key)).lstrip("'b").rstrip("'") + "\" to \"" + str(finalValue).lstrip("'b").rstrip("'") + "\".")
                 currentEntity.__dict__.update({key : finalValue})
                 if len(fileChanges) == 0:
                     fileChanges.append(currentEntity)
@@ -802,8 +804,8 @@ valueTypePropertiesText.tag_configure("white", background="white")
 valueTypePropertiesText.tag_configure("gray", background="lightgray")
 valueTypePropertiesText.tag_raise("sel")
 valueTypePropertiesText.bind("<FocusOut>", lambda e: valueTypePropertiesHex.configure(background="white"))
-valueTypePropertiesText.bind("<FocusOut>", lambda e: writeValue("typeProperties", valueTypePropertiesText, (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('•', '\x00').encode('utf-8', 'ignore').hex())), add="+")
-valueTypePropertiesText.bind("<Return>", lambda e: writeValue("typeProperties", valueTypePropertiesText, (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('•', '\x00').encode('utf-8', 'ignore').hex())))
+valueTypePropertiesText.bind("<FocusOut>", lambda e: writeValue("typeProperties", valueTypePropertiesText, (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('•', '\x00').encode('cp1252').hex())), add="+")
+valueTypePropertiesText.bind("<Return>", lambda e: writeValue("typeProperties", valueTypePropertiesText, (valueTypePropertiesText.get("1.0", END).rstrip('\n').replace('•', '\x00').encode('cp1252').hex())))
 valueTypePropertiesText.bind("<Key>", lambda e: valueTypePropertiesHex.configure(background="white"))
 valueTypePropertiesText.bind("<Button-1>", lambda e: valueTypePropertiesHex.configure(background="white"))
 

@@ -6,6 +6,7 @@
 # Custom-added files (colin did this)
 *.spec
 build_exe_command.txt
+checks.py
 
 # User-specific files
 *.rsuser

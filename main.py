@@ -554,13 +554,14 @@ def clearProperties():
 def writeValue(property, entryBox, value):
     global currentEntity
     finalValue = None
-    try:
-        value = float(value)
-        value = hex(struct.unpack('<I', struct.pack('>f', value))[0]).lstrip("0x")
-        while len(value) < 8:
-            value = "0"+value
-    except:
-            print("Entered value is not being converted to a float.")
+    if lvbType == 1 and property != 'name' and property != 'typeProperties' or lvbType == 2 and property != 'name' and property != 'typeProperties' and property != 'unknown1' and property != 'unknown2':
+        try:
+            value = float(value)
+            value = hex(struct.unpack('<I', struct.pack('>f', value))[0]).lstrip("0x")
+            while len(value) < 8:
+                value = "0"+value
+        except:
+                print("Entered value is not being converted to a float.")
     for key in currentEntity.__dict__.keys():
             if key == property and currentEntity.__dict__.get(key) != value:  
                 if len(value) == len(currentEntity.__dict__.get(key)) and key != "name":
@@ -602,8 +603,8 @@ valueFrame = LabelFrame(propertyFrame)
 valueFrame.grid(row=1, column=1)
 
 value1Entry = Entry(valueFrame, width=30, state=DISABLED)
-value1Entry.bind("<FocusOut>", lambda e: writeValue(value1, value1Entry, bytes(value1Entry.get(), "utf-8")), add="+")
-value1Entry.bind("<Return>", lambda e: writeValue(value1, value1Entry, bytes(value1Entry.get(), "utf-8")))
+value1Entry.bind("<FocusOut>", lambda e: writeValue(value1, value1Entry, bytes(value1Entry.get(), "cp1252")), add="+")
+value1Entry.bind("<Return>", lambda e: writeValue(value1, value1Entry, bytes(value1Entry.get(), "cp1252")))
 value1Entry.pack()
 
 value2Entry = Entry(valueFrame, width=30, state=DISABLED, bg='#f0f0f0')

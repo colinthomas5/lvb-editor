@@ -11,6 +11,8 @@ from tkinter import *
 from tkinter import font
 from tkinter import filedialog
 
+from PIL import Image, ImageTk
+
 # Creating root window
 root = Tk()
 root.title("LVB-Edit: No File")
@@ -24,7 +26,8 @@ def resourcePath(relativePath):
             basePath = os.path.abspath(".")
         return os.path.join(basePath, relativePath)
 
-root.iconbitmap(resourcePath(r'snail.ico'))
+iconImage = Image.open(resourcePath(r'snail.ico'))
+root.wm_iconphoto(True, ImageTk.PhotoImage(iconImage))
 
 layerList = []
 global file

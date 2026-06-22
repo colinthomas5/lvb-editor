@@ -3,7 +3,7 @@ import sys
 import io
 import struct
 
-import fileHandler
+from fileHandler import *
 import entityTypes
 import saveHandler
 
@@ -129,9 +129,7 @@ def openFile():
     global fileName
     filePath = filedialog.askopenfilename(title="Select .lvb or .pak file", filetypes=[("*.lvb", ".lvb"), ("*.pak", ".pak")])
     try:
-        file = open(filePath, 'rb')
-        fileExtension = filePath.split(".", 1)[1]
-        openLevel = fileHandler.openLevelFile(file, fileExtension)
+        openLevel = LVBFile.open(filePath)
         fileName = os.path.split(filePath)[1]
     except FileNotFoundError:
         print("No file was selected; The current file will remain open.")
@@ -144,7 +142,7 @@ def openFile():
     layerListbox.delete(0, END)
     entityListbox.delete(0, END)
     global lvbType
-    lvbType = openLevel[0]
+    lvbType = openLevel.type
     setValues()
     if lvbType == 1:
         value1Entry.unbind("<Key>")
@@ -155,9 +153,9 @@ def openFile():
     clearValues()
     showProperties(lvbType)
     global layerList
-    layerList = openLevel[1]
+    layerList = openLevel.layers
     global fileOffset
-    fileOffset = openLevel[2]
+    fileOffset = openLevel.offset
     global originalLayerList
     originalLayerList = layerList
     layerNumber=1
@@ -170,7 +168,6 @@ def openFile():
     root.title("LVB-Edit: " + fileName)
     global fileChanges
     fileChanges = []
-    file.close()
     closeFileButton.configure(state=NORMAL)
     entitySearchEntry.configure(state=NORMAL)
     print(fileName + ": File opened.")
@@ -271,7 +268,7 @@ def onEntitySelect():
         clearValues()
     for selection in entityListbox.curselection():
         global currentEntity
-        currentEntity = selectedLayer.entityList[selection]
+        currentEntity = selectedLayer.entities[selection]
         refreshValues()
 
 # Refreshes all values for the current entity
@@ -399,7 +396,7 @@ def onLayerSelect(self):
             currentLayer = int(selection)
             global selectedLayer
             selectedLayer = layerList[currentLayer]
-            for entity in selectedLayer.entityList:
+            for entity in selectedLayer.entities:
                 entityListbox.insert(END, entity.name)
 
 # Refreshes the entity list. Used when updating any values in an entity. Makes sure names dynamically update in entity list
@@ -410,7 +407,7 @@ def entityListRefresh():
     global currentEntity
     tempEntity = currentEntity
     entityListbox.delete(0, END)
-    for Entity in selectedLayer.entityList:
+    for Entity in selectedLayer.entities:
         entityListbox.insert(END, Entity.name)
     currentEntity = tempEntity
 

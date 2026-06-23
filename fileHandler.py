@@ -44,13 +44,8 @@ class LVBFile:
             lvb.type = 1 # Type 1 has four layers (in every observed instance), with the names of entities stored alongside the rest of the entity information
         elif headerSize == 128:
             lvb.type = 2 # Type 2 has five layers (in every observed instance), with the first four layers being entities and the fifth layer existing exclusively to store the names of the entities in layers 1-4
-
         lvb.layers = lvb.readLayers()
-
         return lvb
-
-    def read(self):
-        return self
 
     def readHeader(self):
         file = self.file
@@ -60,6 +55,31 @@ class LVBFile:
         file.seek(self.offset)
         return file.read(headerSize)
         
+    def writeHeader(self):
+        header = bytearray()
+        header+=(b'\x00\x00\x00\x00')
+        header+=(len(self.layers[0].entites).to_bytes(4, "little"))
+        header+=(self.layers[0].offset.to_bytes(4, "little"))
+        header+=(b'\x00\x00\x00\x00')
+        header+=(len(self.layers[1].entites).to_bytes(4, "little"))
+        header+=(b'\x00\x00\x00\x00')
+        header+=(self.layers[1].offset.to_bytes(4, "little"))
+        header+=(b'\x00\x00\x00\x00')
+        header+=(len(self.layers[2].entites).to_bytes(4, "little"))
+        header+=(b'\x00\x00\x00\x00')
+        header+=(self.layers[2].offset.to_bytes(4, "little"))
+        header+=(b'\x00\x00\x00\x00')
+        header+=(len(self.layers[3].entites).to_bytes(4, "little"))
+        header+=(b'\x00\x00\x00\x00')
+        header+=(self.layers[3].offset.to_bytes(4, "little"))
+        header+=(b'\x00\x00\x00\x00')
+        if self.type == 2:
+            header+=(len(self.layers[4].entites).to_bytes(4, "little"))
+            header+=(b'\x00\x00\x00\x00')
+            header+=(self.layers[4].offset.to_bytes(4, "little"))
+            header+=(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+        self.header = header
+
     def readLayers(self):
         layers = []
         #Number of layers is determined based on the contents of the header
@@ -78,8 +98,8 @@ class LVBFile:
                 layerOffset = nextLayerOffset
                 layers.append(layer)
             headerSeek+=16
-
         return layers
+    
 
 # Entity objects represent all of the entities that are within the .lvb files. Regardless of type, entities all share the same header format. Different entity types will have different data following their "headerEnd", which should always be "FFFFFFFF"
 class Entity1:

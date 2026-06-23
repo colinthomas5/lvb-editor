@@ -2,7 +2,7 @@ import os
 
 #Class to store .lvb file. Includes file offset from which to start reading for .lvb data, header information, layers, and the .lvb type (based on game of .lvb origin)
 class LVBFile:
-    def __init__(self):
+    def __init__(self, inputFile=None):
         self.file = None
         self.offset = 0
         self.header = None
@@ -11,8 +11,8 @@ class LVBFile:
 
     #Method to open a .lvb file
     @classmethod
-    def open(LVBFile, inputFile):
-        lvb = LVBFile()
+    def open(cls, inputFile):
+        lvb = cls()
         lvb.file = open(inputFile, "rb")
 
         #Library can open .lvb files, or .lvb files nested within .pak archives. The difference in file type determines the offset within the file where the .lvb data starts
@@ -38,22 +38,27 @@ class LVBFile:
             lvb.file.seek(lvb.offset)
 
         #Header contains information regarding the number, location, and number of contents of each layer. Based on the number of layers, the header size changes, which is used to determine the type.
-        lvb.header = lvb.readHeader()
-        headerSize = len(lvb.header)
-        if headerSize == 64:
-            lvb.type = 1 # Type 1 has four layers (in every observed instance), with the names of entities stored alongside the rest of the entity information
-        elif headerSize == 128:
-            lvb.type = 2 # Type 2 has five layers (in every observed instance), with the first four layers being entities and the fifth layer existing exclusively to store the names of the entities in layers 1-4
-        lvb.layers = lvb.readLayers()
+        lvb.readHeader()
+        lvb.readType()
+        lvb.readLayers()
         return lvb
 
+    #Based on the number of layers, the header size changes, which is used to determine the type. Type 1 .lvb files only have 4 layers, while Type 2 .lvb files have 5 layers, which requires a larger header size. I should definitely find a better system to determine .lvb type/version, so maybe future me will find one. Or nova will kill me. Either or.
+    def readType(self):
+        headerSize = len(self.header)
+        if headerSize == 64:
+            self.type = 1 # Type 1 has four layers (in every observed instance), with the names of entities stored alongside the rest of the entity information
+        elif headerSize == 128:
+            self.type = 2 # Type 2 has five layers (in every observed instance), with the first four layers being entities and the fifth layer existing exclusively to store the names of the entities in layers 1-4
+
+    #Header contains information regarding the number, location, and number of contents of each layer.
     def readHeader(self):
         file = self.file
         file.seek(self.offset)
         file.seek(8, 1)
         headerSize = int.from_bytes(file.read(4), "little")
         file.seek(self.offset)
-        return file.read(headerSize)
+        self.header =  file.read(headerSize)
         
     def writeHeader(self):
         header = bytearray()
@@ -81,7 +86,6 @@ class LVBFile:
         self.header = header
 
     def readLayers(self):
-        layers = []
         #Number of layers is determined based on the contents of the header
         layerNumberOfEntities = int.from_bytes(self.header[4:8], "little")
         layerOffset = int.from_bytes(self.header[8:12], "little")
@@ -93,12 +97,13 @@ class LVBFile:
             if nextLayerOffset == 0:
                 nextLayerOffset = None
             if layerOffset != None:
-                layer = Layer().read(self, layerOffset, nextLayerOffset, layerNumberOfEntities)
+                layer = Layer()
+                layer.offset = layerOffset
+                layer.read(self, nextLayerOffset, layerNumberOfEntities)
                 layerNumberOfEntities = int.from_bytes(self.header[headerSeek: headerSeek+4], "little")
                 layerOffset = nextLayerOffset
-                layers.append(layer)
+                self.layers.append(layer)
             headerSeek+=16
-        return layers
     
 
 # Entity objects represent all of the entities that are within the .lvb files. Regardless of type, entities all share the same header format. Different entity types will have different data following their "headerEnd", which should always be "FFFFFFFF"
@@ -120,32 +125,32 @@ class Entity1:
         self.headerEnd = 0
         self.typeProperties = ''
 
-    def read(entity, lvb, offset, nextOffset):
+    def read(self, lvb, offset, nextOffset):
         file = lvb.file
-        entity.offset = hex(offset)
+        self.offset = hex(offset)
         file.seek(offset + lvb.offset, 0)
-        entity.type = file.read(4).hex()
-        entity.posX = file.read(4).hex()
-        entity.posY = file.read(4).hex()
-        entity.posZ = file.read(4).hex()
-        entity.unknown1 = file.read(4).hex()
-        entity.unknown2 = file.read(4).hex()
-        entity.unknown3 = file.read(4).hex()
-        entity.unknown4 = file.read(4).hex()
-        entity.unknown5 = file.read(4).hex()
-        entity.unknown6 = file.read(4).hex()
-        entity.unknown7 = file.read(4).hex()
-        entity.name = file.read(32).rstrip(b'\x00')
-        entity.headerEnd = file.read(4).hex() #always 000080bf
-        entity.typeProperties = ''
+        self.type = file.read(4).hex()
+        self.posX = file.read(4).hex()
+        self.posY = file.read(4).hex()
+        self.posZ = file.read(4).hex()
+        self.unknown1 = file.read(4).hex()
+        self.unknown2 = file.read(4).hex()
+        self.unknown3 = file.read(4).hex()
+        self.unknown4 = file.read(4).hex()
+        self.unknown5 = file.read(4).hex()
+        self.unknown6 = file.read(4).hex()
+        self.unknown7 = file.read(4).hex()
+        self.name = file.read(32).rstrip(b'\x00')
+        self.headerEnd = file.read(4).hex() #always 000080bf
+        self.typeProperties = ''
         if nextOffset != None:
             while file.tell() < (nextOffset + lvb.offset):
-                entity.typeProperties = entity.typeProperties + file.read(4).hex()
+                self.typeProperties = self.typeProperties + file.read(4).hex()
         else:
             while file.read(16).hex() != '3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f3f':
                 file.seek(-16, 1)
-                entity.typeProperties = entity.typeProperties + file.read(4).hex()
-        return entity
+                self.typeProperties = self.typeProperties + file.read(4).hex()
+
 
 # Entity objects represent all of the entities that are within the .lvb files. Regardless of type, entities all share the same header format. Different entity types will have different data following their "headerEnd", which should always be "FFFFFFFF"
 class Entity2:
@@ -171,39 +176,38 @@ class Entity2:
         self.typeProperties = ''
         self.name = ''
         
-    def read(entity, lvb, offset, nextOffset):
+    def read(self, lvb, offset, nextOffset):
         file = lvb.file
-        entity.offset = hex(offset)
+        self.offset = hex(offset)
         file.seek(offset + lvb.offset, 0)
-        entity.type = file.read(8).hex()
-        entity.unknown1 = file.read(4).hex()
-        entity.index = int.from_bytes(file.read(4), "little")
-        entity.unknown2 = file.read(4).hex()
-        entity.posX = file.read(4).hex()
-        entity.posY = file.read(4).hex()
-        entity.posZ = file.read(4).hex()
-        entity.unknown3 = file.read(4).hex()
-        entity.unknown4 = file.read(4).hex()
-        entity.unknown5 = file.read(4).hex()
-        entity.unknown6 = file.read(4).hex()
-        entity.unknown7 = file.read(4).hex()
-        entity.unknown8 = file.read(4).hex()
-        entity.unknown9 = file.read(4).hex()
-        entity.unknown10 = file.read(4).hex()
-        entity.headerEnd = file.read(4).hex() #always ffffffff
-        entity.typeProperties = ''
+        self.type = file.read(8).hex()
+        self.unknown1 = file.read(4).hex()
+        self.index = int.from_bytes(file.read(4), "little")
+        self.unknown2 = file.read(4).hex()
+        self.posX = file.read(4).hex()
+        self.posY = file.read(4).hex()
+        self.posZ = file.read(4).hex()
+        self.unknown3 = file.read(4).hex()
+        self.unknown4 = file.read(4).hex()
+        self.unknown5 = file.read(4).hex()
+        self.unknown6 = file.read(4).hex()
+        self.unknown7 = file.read(4).hex()
+        self.unknown8 = file.read(4).hex()
+        self.unknown9 = file.read(4).hex()
+        self.unknown10 = file.read(4).hex()
+        self.headerEnd = file.read(4).hex() #always ffffffff
+        self.typeProperties = ''
         while file.tell() < (nextOffset + lvb.offset):
-            entity.typeProperties = entity.typeProperties + file.read(4).hex()
-        nameLocation = int.from_bytes(lvb.header[72:76], "little") + (entity.index*8)
-        entity.nameLocation = hex(nameLocation)
+            self.typeProperties = self.typeProperties + file.read(4).hex()
+        nameLocation = int.from_bytes(lvb.header[72:76], "little") + (self.index*8)
+        self.nameLocation = hex(nameLocation)
         file.seek(nameLocation + lvb.offset, 0)
         nameOffset = int.from_bytes(file.read(8), "little")
-        entity.nameOffset = hex(nameOffset)
+        self.nameOffset = hex(nameOffset)
         file.seek(nameOffset + lvb.offset, 0)
         nameLength = int.from_bytes(file.read(4), "little")
-        entity.nameLength = hex(nameLength)
-        entity.name = file.read(nameLength)
-        return entity
+        self.nameLength = hex(nameLength)
+        self.name = file.read(nameLength)
 
 # Entity objects represent all of the entities that are within the .lvb files. Regardless of type, entities all share the same header format. Different entity types will have different data following their "headerEnd", which should always be "FFFFFFFF"
 class EntityName: # LVB Type 2-exclusive entity type
@@ -213,13 +217,12 @@ class EntityName: # LVB Type 2-exclusive entity type
         self.length = 0
         self.entry = None
     
-    def read(entity, lvb, offset):
+    def read(self, lvb, offset):
         file = lvb.file
-        entity.offset = hex(offset)
+        self.offset = hex(offset)
         file.seek(offset + lvb.offset, 0)
-        entity.length = int.from_bytes(file.read(4), "little")
-        entity.entry = file.read(entity.length).hex()
-        return entity
+        self.length = int.from_bytes(file.read(4), "little")
+        self.entry = file.read(self.length).hex()
 
 #Entities are sorted into Layers within .lvb files. Layers start with a table that lists all hex offsets of entities within that layer, followed by the entities within that layer.
 class Layer:
@@ -229,14 +232,14 @@ class Layer:
         self.type = None
 
     #When parsing a layer, the layer object fills a list with all of the entities in that layer while populating all of the information about the entities.
-    def read(layer, lvb, offset, nextOffset, numberOfEntities):
+    def read(self, lvb, nextOffset, numberOfEntities):
         file = lvb.file
-        layer.offset = offset
+        offset = self.offset
         entityNumber = 0
         if lvb.type == 1 or nextOffset != None:
-            layer.type = "entity"
-            while(len(layer.entities) < numberOfEntities):
-                entityLocation = layer.offset + (entityNumber*8) + lvb.offset
+            self.type = "entity"
+            while(len(self.entities) < numberOfEntities):
+                entityLocation = offset + (entityNumber*8) + lvb.offset
                 file.seek(entityLocation, 0)
                 entityOffset = int.from_bytes(file.read(8), "little")
                 if entityNumber+1 != numberOfEntities:
@@ -245,57 +248,20 @@ class Layer:
                     nextEntityOffset = nextOffset
                 if lvb.type == 1:
                     entity = Entity1()
-                    entity = Entity1.read(entity, lvb, entityOffset, nextEntityOffset)
+                    entity.read(lvb, entityOffset, nextEntityOffset)
                 elif lvb.type == 2:
                     entity = Entity2()
-                    entity = Entity2.read(entity, lvb, entityOffset, nextEntityOffset)
-                layer.entities.append(entity)
+                    entity.read(lvb, entityOffset, nextEntityOffset)
+                self.entities.append(entity)
                 entityNumber+=1
         elif lvb.type  == 2 and nextOffset == None:
-            layer.type = "name"
-            layer.entities.clear()
+            self.type = "name"
+            self.entities.clear()
             while(entityNumber < numberOfEntities):
-                entityLocation = layer.offset + (entityNumber*8) + lvb.offset
+                entityLocation = self.offset + (entityNumber*8) + lvb.offset
                 file.seek(entityLocation, 0)
                 nameEntityOffset = int.from_bytes(file.read(8), "little")
                 nameEntity = EntityName()
-                nameEntity = EntityName.read(nameEntity, lvb, nameEntityOffset)
-                layer.entities.append(nameEntity)
+                nameEntity.read(lvb, nameEntityOffset)
+                self.entities.append(nameEntity)
                 entityNumber+=1
-        return layer
-
-
-#  Entities are sorted into Layers within .lvb files. Layers start with a table that lists all hex offsets of entities within that layer, followed by the entities. When parsing a layer, the layer object fills a list with all of the entities in that layer while populating all of the information about the entities.
-#class Layer:
-#    def __init__(self, offset, nextOffset, numberOfEntities):
-#        self.offset = offset
-#        self.numberOfEntities = numberOfEntities
-#        entityList = []
-#        self.entityList = entityList
-#        entityNumber=0
-#        if nextOffset != None or lvbType == 1:
-#           self.type = "entity"
-#            while(entityNumber < numberOfEntities):
-#                entityLocation = offset + (entityNumber*8) + fileOffset
-#                file.seek(entityLocation, 0)
-#                entityOffset = int.from_bytes(file.read(8), "little")
-#                if entityNumber+1 != numberOfEntities:
-#                    nextEntityOffset = int.from_bytes(file.read(8), "little")
-#                else:
-#                    nextEntityOffset = nextOffset
-#                if lvbType == 1:
-#                    entity = Entity1(self, entityOffset, nextEntityOffset)
-#                elif lvbType == 2:
-#                    entity = Entity2(self, entityOffset, nextEntityOffset)
-#                entityList.append(entity)
-#                entityNumber+=1
-#        else:
-#            self.type = "name"
-#            entityList.clear()
-#            while(entityNumber < numberOfEntities):
-#                entityLocation = offset + (entityNumber*8) + fileOffset
-#                file.seek(entityLocation, 0)
-#                nameEntityOffset = int.from_bytes(file.read(8), "little")
-#                nameEntity = EntityName(self, nameEntityOffset)
-#                entityList.append(nameEntity)
-#                entityNumber+=1]

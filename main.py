@@ -127,7 +127,7 @@ def openFile():
     global file
     global filePath
     global fileName
-    filePath = filedialog.askopenfilename(title="Select .lvb or .pak file", filetypes=[("*.lvb", ".lvb"), ("*.pak", ".pak")])
+    filePath = filedialog.askopenfilename(title="Select .lvb or .pak file", filetypes=[("", "*.lvb *.pak")])
     try:
         openLevel = LVBFile.open(filePath)
         fileName = os.path.split(filePath)[1]
@@ -151,6 +151,7 @@ def openFile():
         value1Entry.bind("<Key>", lambda e: "break")
         value4Entry.bind("<Key>", lambda e: "break")
     clearValues()
+    clearProperties()
     showProperties(lvbType)
     global layerList
     layerList = openLevel.layers

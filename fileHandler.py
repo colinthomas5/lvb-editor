@@ -2,7 +2,7 @@ import os
 
 #Class to store .lvb file. Includes file offset from which to start reading for .lvb data, header information, layers, and the .lvb type (based on game of .lvb origin)
 class LVBFile:
-    def __init__(self, inputFile=None):
+    def __init__(self):
         self.file = None
         self.offset = 0
         self.header = None
@@ -17,17 +17,19 @@ class LVBFile:
 
         #Library can open .lvb files, or .lvb files nested within .pak archives. The difference in file type determines the offset within the file where the .lvb data starts
         #.LVB file has no offset
-        fileExtension = inputFile.split(".", 1)[1]
-        if fileExtension == "lvb":
+        fileExtension = os.path.splitext(inputFile)[1].lower()
+        if fileExtension == ".lvb":
             lvb.offset = 0
         #LVBFile object has a variable offset depending on where the .lvb file is within the .pak archive
-        elif fileExtension == "pak":
+        elif fileExtension == ".pak":
             headerSize = int.from_bytes(lvb.file.read(4), "little")
             bytesToFind = b'.lvb'
             lvb.file.seek(0)
             fileString = lvb.file.read()
             #Searching for ".lvb" within .pak archive to determine where the .lvb file is within the .pak archive
             extensionLocation = fileString.find(bytesToFind)
+            if extensionLocation == -1:
+                raise ValueError("No .lvb file found in .pak archive.")
             lvb.file.seek(extensionLocation, 0)
 
             #The .lvb file within the .pak file is .seek()ed to for purposes of constructing header, type, and layer information
@@ -59,27 +61,28 @@ class LVBFile:
         headerSize = int.from_bytes(file.read(4), "little")
         file.seek(self.offset)
         self.header =  file.read(headerSize)
-        
+    
+    #Header pattern is the same across lvb types besides size, so header can be reconstructed based on layer contents
     def writeHeader(self):
         header = bytearray()
         header+=(b'\x00\x00\x00\x00')
-        header+=(len(self.layers[0].entites).to_bytes(4, "little"))
+        header+=(len(self.layers[0].entities).to_bytes(4, "little"))
         header+=(self.layers[0].offset.to_bytes(4, "little"))
         header+=(b'\x00\x00\x00\x00')
-        header+=(len(self.layers[1].entites).to_bytes(4, "little"))
+        header+=(len(self.layers[1].entities).to_bytes(4, "little"))
         header+=(b'\x00\x00\x00\x00')
         header+=(self.layers[1].offset.to_bytes(4, "little"))
         header+=(b'\x00\x00\x00\x00')
-        header+=(len(self.layers[2].entites).to_bytes(4, "little"))
+        header+=(len(self.layers[2].entities).to_bytes(4, "little"))
         header+=(b'\x00\x00\x00\x00')
         header+=(self.layers[2].offset.to_bytes(4, "little"))
         header+=(b'\x00\x00\x00\x00')
-        header+=(len(self.layers[3].entites).to_bytes(4, "little"))
+        header+=(len(self.layers[3].entities).to_bytes(4, "little"))
         header+=(b'\x00\x00\x00\x00')
         header+=(self.layers[3].offset.to_bytes(4, "little"))
         header+=(b'\x00\x00\x00\x00')
         if self.type == 2:
-            header+=(len(self.layers[4].entites).to_bytes(4, "little"))
+            header+=(len(self.layers[4].entities).to_bytes(4, "little"))
             header+=(b'\x00\x00\x00\x00')
             header+=(self.layers[4].offset.to_bytes(4, "little"))
             header+=(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
@@ -92,7 +95,7 @@ class LVBFile:
         headerSeek = 16
 
         # For each defined layer in the header, a list of entities is created and appended to the layer list within the LVBFile object
-        while headerSeek <= len(self.header):
+        while headerSeek < len(self.header):
             nextLayerOffset = int.from_bytes(self.header[headerSeek+8: headerSeek+12], "little")
             if nextLayerOffset == 0:
                 nextLayerOffset = None
@@ -104,7 +107,30 @@ class LVBFile:
                 layerOffset = nextLayerOffset
                 self.layers.append(layer)
             headerSeek+=16
-    
+
+    #WIP layer writing function; not finished
+    def writeLayer(layer):
+        layerIndex = bytearray()
+        entityArray = bytearray()
+        for entity in layer:
+            layerIndex += (entity.offset.to_bytes(4, "little"))
+            layerIndex += (b'\x00\x00\x00\x00')
+            entityArray += (entity.writeEntity())
+        writtenLayer = layerIndex + entityArray
+        return writtenLayer
+        
+        
+    #WIP save logic; not implemented
+    def save(self):
+        savedFile = bytearray()
+        self.writeHeader()
+        savedFile.append(self.header)
+        for layer in self.layers:
+            layerArray = bytearray()
+            layerArray = self.writeLayer(layer)
+            savedFile.append(layerArray)
+
+        
 
 # Entity objects represent all of the entities that are within the .lvb files. Regardless of type, entities all share the same header format. Different entity types will have different data following their "headerEnd", which should always be "FFFFFFFF"
 class Entity1:
@@ -238,7 +264,7 @@ class Layer:
         entityNumber = 0
         if lvb.type == 1 or nextOffset != None:
             self.type = "entity"
-            while(len(self.entities) < numberOfEntities):
+            while len(self.entities) < numberOfEntities:
                 entityLocation = offset + (entityNumber*8) + lvb.offset
                 file.seek(entityLocation, 0)
                 entityOffset = int.from_bytes(file.read(8), "little")
@@ -252,6 +278,8 @@ class Layer:
                 elif lvb.type == 2:
                     entity = Entity2()
                     entity.read(lvb, entityOffset, nextEntityOffset)
+                else:
+                    raise ValueError("Invalid LVB type.")
                 self.entities.append(entity)
                 entityNumber+=1
         elif lvb.type  == 2 and nextOffset == None:
